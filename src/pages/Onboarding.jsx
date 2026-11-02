@@ -5,6 +5,7 @@ import { buildDiagnostic, DIAGNOSTIC_MINUTES } from "../data/diagnostic.js";
 import { thresholdFor } from "../lib/score.js";
 import { Button, Card, Bar, Clock, useCountdown, cx, TONE } from "../components/ui.jsx";
 import { Question } from "../components/Question.jsx";
+import Placement from "./Placement.jsx";
 
 const LEVEL_OPTIONS = [
   { level: 3, note: "120+ оноо · их сургуулийн бэлтгэл анги, ажлын виз" },
@@ -48,6 +49,9 @@ function Choice({ selected, onClick, title, note }) {
 export default function Onboarding() {
   const profile = useStore((s) => s.profile);
   const stored = useStore((s) => s.diagnostic);
+  const placement = useStore((s) => s.placement);
+  // Тест дуусаад дүнгээ үзэж дуустал Placement-ийг харуулсаар байна.
+  const [placing, setPlacing] = useState(!placement || placement.pending);
   // Тест дууссан ч дүнг үзээгүй (жишээ нь хуудсыг refresh хийсэн) бол дүн рүү шууд орно.
   const [step, setStep] = useState(stored?.scores ? 6 : profile ? 4 : 0);
   const [level, setLevel] = useState(4);
@@ -71,7 +75,7 @@ export default function Onboarding() {
           <p className="ko text-sm font-medium text-muted" lang="ko">한국어능력시험 II</p>
           <h1 className="mt-1 text-4xl font-bold tracking-tight">TOPIK II Sprint</h1>
           <p className="mt-4 text-lg leading-relaxed text-muted">
-            8 долоо хоногт 3–4-р түвшинд хүрэх хувийн төлөвлөгөө. Эхлээд хэдэн асуулт, дараа нь 30 минутын оношлох тест.
+            8 долоо хоногт 3–4-р түвшинд хүрэх хувийн төлөвлөгөө. Эхлээд хэдэн асуулт, дараа нь түвшин тогтоох тест — «Үсэг мэдэх үү?»-ээс эхэлнэ.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-2 text-center text-sm">
             {[
@@ -142,6 +146,20 @@ export default function Onboarding() {
         </div>
         <Button className="mt-6 w-full" onClick={saveProfile}>Үргэлжлүүлэх</Button>
       </Shell>
+    );
+  }
+
+  if (step === 4 && (placing || !placement || placement.pending)) {
+    return (
+      <Placement
+        onDone={(result) => {
+          if (result === "topik") return setPlacing(false);
+          window.location.hash = "#/";
+          update((s) => {
+            s.diagnostic = { scores: null, skipped: true, seen: true, completedAt: Date.now() };
+          });
+        }}
+      />
     );
   }
 

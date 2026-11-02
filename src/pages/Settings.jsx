@@ -3,7 +3,9 @@ import { useStore, update, resetAll, getState } from "../lib/store.js";
 import { setTheme } from "../lib/theme.js";
 import { today, addDays } from "../lib/dates.js";
 import { Page, Card, Button, cx } from "../components/ui.jsx";
-import { logout, useSession } from "../lib/account.js";
+import { logout, useSession, useSyncStatus } from "../lib/account.js";
+
+const SYNC_LABEL = { idle: "Сервер дээр хадгалагдсан", saved: "Сервер дээр хадгалагдсан", saving: "Хадгалж байна…", offline: "Интернэтгүй — холбогдмогц хадгална", local: "Одоогоор энэ төхөөрөмж дээр хадгалагдаж байна" };
 
 function Segmented({ value, options, onChange }) {
   return (
@@ -22,6 +24,7 @@ export default function Settings() {
   const { profile, settings } = state;
   const [confirm, setConfirm] = useState(false);
   const session = useSession();
+  const sync = useSyncStatus();
 
   const setProfile = (patch) =>
     update((s) => {
@@ -43,7 +46,7 @@ export default function Settings() {
         <Card className="flex items-center gap-3">
           <div className="flex-1">
             <p className="text-sm font-medium">{session?.name}</p>
-            <p className="text-xs text-muted">Нэвтэрсэн хэрэглэгч</p>
+            <p className={cx("text-xs", sync === "offline" ? "text-bad" : "text-muted")}>{SYNC_LABEL[sync]}</p>
           </div>
           <Button variant="outline" onClick={logout}>Гарах</Button>
         </Card>
@@ -83,7 +86,7 @@ export default function Settings() {
 
         <Card className="space-y-2">
           <p className="text-sm font-medium">Өгөгдөл</p>
-          <p className="text-xs text-muted">Явц таны аккаунтад энэ төхөөрөмжийн браузерт хадгалагдана. Төхөөрөмж солихын өмнө экспортлоорой.</p>
+          <p className="text-xs text-muted">Явц таны аккаунтад сервер дээр хадгалагдана — өөр утас, компьютерээс нэр, кодоороо нэвтэрч үргэлжлүүлнэ.</p>
           <Button variant="outline" className="w-full" onClick={exportData}>JSON экспортлох</Button>
           <Button
             variant="outline"

@@ -10,6 +10,7 @@ const VERSION = 1;
 const EMPTY = {
   version: VERSION,
   profile: null, // { targetLevel, examDate, startDate, minutesPerDay }
+  placement: null, // { result: "letters"|"words"|"topik", letters, words, at } — түвшин тогтоох тест
   diagnostic: null, // { scores: { listening, reading, writing, vocab }, completedAt }
   srs: {}, // wordId → card
   mistakes: [], // { key, kind, qid, chosen, at, resolved }

@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { gradeWriting } from "./server/grade.js";
 import { analyzeText } from "./server/analyze.js";
 import { synthesize } from "./server/tts.js";
+import { handleAccount } from "./server/account.js";
 
 // Dev-д /api/* -г Vite өөрөө үйлчилнэ; production-д api/*.js (Vercel function) ажиллана.
 function devApi() {
@@ -24,6 +25,10 @@ function devApi() {
         if (req.method !== "POST") return ((res.statusCode = 405), res.end());
         send(res, await gradeWriting(await readJson(req)));
       });
+      server.middlewares.use("/api/account", async (req, res) => {
+        if (req.method !== "POST") return ((res.statusCode = 405), res.end());
+        send(res, await handleAccount(await readJson(req), req.headers.authorization ?? ""));
+      });
       server.middlewares.use("/api/analyze", async (req, res) => {
         if (req.method !== "POST") return ((res.statusCode = 405), res.end());
         send(res, await analyzeText(await readJson(req)));
@@ -43,7 +48,7 @@ function devApi() {
 export default defineConfig(({ mode }) => {
   // .env.local доторх ANTHROPIC_API_KEY-г зөвхөн сервер талд (middleware) ашиглана — client bundle-д орохгүй.
   const env = loadEnv(mode, process.cwd(), "");
-  for (const k of ["ANTHROPIC_API_KEY"]) {
+  for (const k of ["ANTHROPIC_API_KEY", "KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]) {
     if (env[k] && !process.env[k]) process.env[k] = env[k];
   }
   return { plugins: [react(), tailwindcss(), devApi()] };
