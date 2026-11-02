@@ -3,6 +3,7 @@ import { useStore, update, resetAll, getState } from "../lib/store.js";
 import { setTheme } from "../lib/theme.js";
 import { today, addDays } from "../lib/dates.js";
 import { Page, Card, Button, cx } from "../components/ui.jsx";
+import { logout, useSession } from "../lib/account.js";
 
 function Segmented({ value, options, onChange }) {
   return (
@@ -20,6 +21,7 @@ export default function Settings() {
   const state = useStore();
   const { profile, settings } = state;
   const [confirm, setConfirm] = useState(false);
+  const session = useSession();
 
   const setProfile = (patch) =>
     update((s) => {
@@ -38,6 +40,14 @@ export default function Settings() {
   return (
     <Page title="Тохиргоо" back="#/">
       <div className="space-y-3">
+        <Card className="flex items-center gap-3">
+          <div className="flex-1">
+            <p className="text-sm font-medium">{session?.name}</p>
+            <p className="text-xs text-muted">Нэвтэрсэн хэрэглэгч</p>
+          </div>
+          <Button variant="outline" onClick={logout}>Гарах</Button>
+        </Card>
+
         <Card className="space-y-2">
           <p className="text-sm font-medium">Харагдац</p>
           <Segmented value={settings.theme} onChange={setTheme} options={[["light", "Цайвар"], ["dark", "Бараан"], ["system", "Систем"]]} />
@@ -73,7 +83,7 @@ export default function Settings() {
 
         <Card className="space-y-2">
           <p className="text-sm font-medium">Өгөгдөл</p>
-          <p className="text-xs text-muted">Бүх явц зөвхөн энэ төхөөрөмжийн браузерт хадгалагдана. Төхөөрөмж солихын өмнө экспортлоорой.</p>
+          <p className="text-xs text-muted">Явц таны аккаунтад энэ төхөөрөмжийн браузерт хадгалагдана. Төхөөрөмж солихын өмнө экспортлоорой.</p>
           <Button variant="outline" className="w-full" onClick={exportData}>JSON экспортлох</Button>
           <Button
             variant="outline"

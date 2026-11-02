@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useStore } from "./lib/store.js";
 import { cx } from "./components/ui.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
+import Login from "./pages/Login.jsx";
+import { useSession } from "./lib/account.js";
 import Home from "./pages/Home.jsx";
 import Vocab from "./pages/Vocab.jsx";
 import Practice from "./pages/Practice.jsx";
@@ -63,6 +65,11 @@ const NAV = [
 const PRACTICE_ROUTES = ["hangul", "sentences", "easy-listening", "practice", "grammar", "listening", "reading", "writing", "mistakes"];
 
 export default function App() {
+  const session = useSession();
+  return session ? <Main key={session.name} /> : <Login />;
+}
+
+function Main() {
   const profile = useStore((s) => s.profile);
   const diagnostic = useStore((s) => s.diagnostic);
   const route = useHashRoute();

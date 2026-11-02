@@ -13,7 +13,10 @@
     <script>
       // Анивчихгүйн тулд сэдвийг render-ээс өмнө тогтооно.
       try {
-        var st = (JSON.parse(localStorage.getItem("topik-sprint")) || {}).settings || {};
+        var ses = JSON.parse(localStorage.getItem("topik-sprint:session")) || {};
+        var key = ses.name ? "topik-sprint:u:" + ses.name.trim().toLowerCase() : "";
+        var st = (key && JSON.parse(localStorage.getItem(key))) || {};
+        st = st.settings || {};
         // Ягаан theme-ээс өмнөх хэрэглэгч: цайвар ягаанаар эхэлнэ (store.js migrate-тэй ижил).
         var t = st.pinkTheme ? st.theme : "light";
         if (t === "dark" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches))

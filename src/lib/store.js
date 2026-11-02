@@ -30,23 +30,81 @@ function migrate(data) {
   return out;
 }
 
-function load() {
+// Хэрэглэгч бүрийн явц тусдаа түлхүүрт (энэ төхөөрөмжийн кэш) + сервер дээр хадгалагдана.
+// KEY (хуучин, аккаунтгүй үеийн өгөгдөл) нь бүртгүүлэх үед шинэ аккаунтад шилждэг.
+let userKey = null;
+let onChange = null; // account.js-ийн сервер рүү хадгалах функц
+
+const cacheKey = (u) => `${KEY}:u:${u}`;
+
+function read(key) {
   try {
-    return migrate(JSON.parse(localStorage.getItem(KEY)));
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
   } catch {
-    return structuredClone(EMPTY);
+    return null;
   }
 }
 
-let state = load();
+/** Аккаунтгүй үед энэ төхөөрөмж дээр хийсэн явц (байвал). */
+export function legacyData() {
+  const d = read(KEY);
+  return d?.profile ? d : null;
+}
+export function clearLegacy() {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function cachedData(user) {
+  return read(cacheKey(user));
+}
+
+let state = structuredClone(EMPTY);
 const listeners = new Set();
 
 function persist() {
+  if (!userKey) return;
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    localStorage.setItem(cacheKey(userKey), JSON.stringify(state));
   } catch {
     // Хадгалах зай дүүрсэн эсвэл хувийн цонх — апп ажилласаар байна.
   }
+  onChange?.(state);
+}
+
+function emit() {
+  listeners.forEach((l) => l());
+}
+
+/** Нэвтэрсэн хэрэглэгчийн өгөгдлийг идэвхжүүлнэ. sync = өөрчлөлт бүрт дуудагдах функц. */
+export function openUser(user, data, sync) {
+  userKey = user;
+  onChange = null;
+  state = migrate(data);
+  persist();
+  onChange = sync;
+  emit();
+}
+
+/** Серверээс ирсэн шинэ өгөгдлөөр солино (сервер рүү буцааж илгээхгүй). */
+export function replaceState(data) {
+  state = migrate(data);
+  const s = onChange;
+  onChange = null;
+  persist();
+  onChange = s;
+  emit();
+}
+
+export function closeUser() {
+  userKey = null;
+  onChange = null;
+  state = structuredClone(EMPTY);
+  emit();
 }
 
 export function getState() {
@@ -57,9 +115,10 @@ export function getState() {
 export function update(fn) {
   const draft = structuredClone(state);
   const next = fn(draft) ?? draft;
+  next.updatedAt = Date.now();
   state = next;
   persist();
-  listeners.forEach((l) => l());
+  emit();
 }
 
 function subscribe(l) {
@@ -72,9 +131,9 @@ export function useStore(selector = (s) => s) {
 }
 
 export function resetAll() {
-  state = structuredClone(EMPTY);
+  state = { ...structuredClone(EMPTY), updatedAt: Date.now() };
   persist();
-  listeners.forEach((l) => l());
+  emit();
 }
 
 // ---------- Туслах үйлдлүүд ----------

@@ -43,8 +43,8 @@ function devApi() {
 export default defineConfig(({ mode }) => {
   // .env.local доторх ANTHROPIC_API_KEY-г зөвхөн сервер талд (middleware) ашиглана — client bundle-д орохгүй.
   const env = loadEnv(mode, process.cwd(), "");
-  if (env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_API_KEY) {
-    process.env.ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY;
+  for (const k of ["ANTHROPIC_API_KEY"]) {
+    if (env[k] && !process.env[k]) process.env[k] = env[k];
   }
   return { plugins: [react(), tailwindcss(), devApi()] };
 });
