@@ -1,0 +1,382 @@
+{
+ "groups": [
+  {
+   "id": "consonant",
+   "title": "Үндсэн гийгүүлэгч"
+  },
+  {
+   "id": "vowel",
+   "title": "Үндсэн эгшиг"
+  },
+  {
+   "id": "double",
+   "title": "Давхар гийгүүлэгч"
+  },
+  {
+   "id": "compound",
+   "title": "Нийлмэл эгшиг"
+  }
+ ],
+ "letters": [
+  {
+   "id": "h01",
+   "ch": "ㄱ",
+   "group": "consonant",
+   "sound": "г / к",
+   "say": "가",
+   "ex_ko": "가방",
+   "ex_mn": "цүнх"
+  },
+  {
+   "id": "h02",
+   "ch": "ㄴ",
+   "group": "consonant",
+   "sound": "н",
+   "say": "나",
+   "ex_ko": "나무",
+   "ex_mn": "мод"
+  },
+  {
+   "id": "h03",
+   "ch": "ㄷ",
+   "group": "consonant",
+   "sound": "д / т",
+   "say": "다",
+   "ex_ko": "다리",
+   "ex_mn": "хөл; гүүр"
+  },
+  {
+   "id": "h04",
+   "ch": "ㄹ",
+   "group": "consonant",
+   "sound": "р / л",
+   "say": "라",
+   "ex_ko": "라면",
+   "ex_mn": "рамён (гоймон)"
+  },
+  {
+   "id": "h05",
+   "ch": "ㅁ",
+   "group": "consonant",
+   "sound": "м",
+   "say": "마",
+   "ex_ko": "모자",
+   "ex_mn": "малгай"
+  },
+  {
+   "id": "h06",
+   "ch": "ㅂ",
+   "group": "consonant",
+   "sound": "б / п",
+   "say": "바",
+   "ex_ko": "바다",
+   "ex_mn": "далай"
+  },
+  {
+   "id": "h07",
+   "ch": "ㅅ",
+   "group": "consonant",
+   "sound": "с",
+   "say": "사",
+   "ex_ko": "사과",
+   "ex_mn": "алим"
+  },
+  {
+   "id": "h08",
+   "ch": "ㅇ",
+   "group": "consonant",
+   "sound": "(дуугүй) / нг",
+   "say": "아",
+   "ex_ko": "아이",
+   "ex_mn": "хүүхэд"
+  },
+  {
+   "id": "h09",
+   "ch": "ㅈ",
+   "group": "consonant",
+   "sound": "ж",
+   "say": "자",
+   "ex_ko": "자동차",
+   "ex_mn": "машин"
+  },
+  {
+   "id": "h10",
+   "ch": "ㅊ",
+   "group": "consonant",
+   "sound": "ч",
+   "say": "차",
+   "ex_ko": "차",
+   "ex_mn": "цай; машин"
+  },
+  {
+   "id": "h11",
+   "ch": "ㅋ",
+   "group": "consonant",
+   "sound": "к (амьсгалтай)",
+   "say": "카",
+   "ex_ko": "카메라",
+   "ex_mn": "камер"
+  },
+  {
+   "id": "h12",
+   "ch": "ㅌ",
+   "group": "consonant",
+   "sound": "т (амьсгалтай)",
+   "say": "타",
+   "ex_ko": "토마토",
+   "ex_mn": "улаан лооль"
+  },
+  {
+   "id": "h13",
+   "ch": "ㅍ",
+   "group": "consonant",
+   "sound": "п (амьсгалтай)",
+   "say": "파",
+   "ex_ko": "포도",
+   "ex_mn": "усан үзэм"
+  },
+  {
+   "id": "h14",
+   "ch": "ㅎ",
+   "group": "consonant",
+   "sound": "х",
+   "say": "하",
+   "ex_ko": "하나",
+   "ex_mn": "нэг"
+  },
+  {
+   "id": "h15",
+   "ch": "ㅏ",
+   "group": "vowel",
+   "sound": "а",
+   "say": "아",
+   "ex_ko": "아빠",
+   "ex_mn": "аав"
+  },
+  {
+   "id": "h16",
+   "ch": "ㅑ",
+   "group": "vowel",
+   "sound": "я",
+   "say": "야",
+   "ex_ko": "야구",
+   "ex_mn": "бейсбол"
+  },
+  {
+   "id": "h17",
+   "ch": "ㅓ",
+   "group": "vowel",
+   "sound": "ө",
+   "say": "어",
+   "ex_ko": "어머니",
+   "ex_mn": "ээж"
+  },
+  {
+   "id": "h18",
+   "ch": "ㅕ",
+   "group": "vowel",
+   "sound": "ё",
+   "say": "여",
+   "ex_ko": "여자",
+   "ex_mn": "эмэгтэй"
+  },
+  {
+   "id": "h19",
+   "ch": "ㅗ",
+   "group": "vowel",
+   "sound": "о",
+   "say": "오",
+   "ex_ko": "오이",
+   "ex_mn": "өргөст хэмх"
+  },
+  {
+   "id": "h20",
+   "ch": "ㅛ",
+   "group": "vowel",
+   "sound": "ё",
+   "say": "요",
+   "ex_ko": "요리",
+   "ex_mn": "хоол хийх"
+  },
+  {
+   "id": "h21",
+   "ch": "ㅜ",
+   "group": "vowel",
+   "sound": "у",
+   "say": "우",
+   "ex_ko": "우유",
+   "ex_mn": "сүү"
+  },
+  {
+   "id": "h22",
+   "ch": "ㅠ",
+   "group": "vowel",
+   "sound": "ю",
+   "say": "유",
+   "ex_ko": "유리",
+   "ex_mn": "шил"
+  },
+  {
+   "id": "h23",
+   "ch": "ㅡ",
+   "group": "vowel",
+   "sound": "ы",
+   "say": "으",
+   "ex_ko": "으악",
+   "ex_mn": "аа! (айсан дуу)"
+  },
+  {
+   "id": "h24",
+   "ch": "ㅣ",
+   "group": "vowel",
+   "sound": "и",
+   "say": "이",
+   "ex_ko": "이름",
+   "ex_mn": "нэр"
+  },
+  {
+   "id": "h25",
+   "ch": "ㄲ",
+   "group": "double",
+   "sound": "кк (чанга)",
+   "say": "까",
+   "ex_ko": "까치",
+   "ex_mn": "шаазгай"
+  },
+  {
+   "id": "h26",
+   "ch": "ㄸ",
+   "group": "double",
+   "sound": "тт (чанга)",
+   "say": "따",
+   "ex_ko": "딸기",
+   "ex_mn": "гүзээлзгэнэ"
+  },
+  {
+   "id": "h27",
+   "ch": "ㅃ",
+   "group": "double",
+   "sound": "пп (чанга)",
+   "say": "빠",
+   "ex_ko": "빵",
+   "ex_mn": "талх"
+  },
+  {
+   "id": "h28",
+   "ch": "ㅆ",
+   "group": "double",
+   "sound": "сс (чанга)",
+   "say": "싸",
+   "ex_ko": "쌀",
+   "ex_mn": "цагаан будаа"
+  },
+  {
+   "id": "h29",
+   "ch": "ㅉ",
+   "group": "double",
+   "sound": "зз (чанга)",
+   "say": "짜",
+   "ex_ko": "짜다",
+   "ex_mn": "давстай"
+  },
+  {
+   "id": "h30",
+   "ch": "ㅐ",
+   "group": "compound",
+   "sound": "э",
+   "say": "애",
+   "ex_ko": "개",
+   "ex_mn": "нохой"
+  },
+  {
+   "id": "h31",
+   "ch": "ㅔ",
+   "group": "compound",
+   "sound": "э",
+   "say": "에",
+   "ex_ko": "네",
+   "ex_mn": "тийм"
+  },
+  {
+   "id": "h32",
+   "ch": "ㅒ",
+   "group": "compound",
+   "sound": "е",
+   "say": "얘",
+   "ex_ko": "얘기",
+   "ex_mn": "яриа"
+  },
+  {
+   "id": "h33",
+   "ch": "ㅖ",
+   "group": "compound",
+   "sound": "е",
+   "say": "예",
+   "ex_ko": "시계",
+   "ex_mn": "цаг"
+  },
+  {
+   "id": "h34",
+   "ch": "ㅘ",
+   "group": "compound",
+   "sound": "ва",
+   "say": "와",
+   "ex_ko": "사과",
+   "ex_mn": "алим"
+  },
+  {
+   "id": "h35",
+   "ch": "ㅙ",
+   "group": "compound",
+   "sound": "вэ",
+   "say": "왜",
+   "ex_ko": "왜",
+   "ex_mn": "яагаад"
+  },
+  {
+   "id": "h36",
+   "ch": "ㅚ",
+   "group": "compound",
+   "sound": "вэ",
+   "say": "외",
+   "ex_ko": "회사",
+   "ex_mn": "компани"
+  },
+  {
+   "id": "h37",
+   "ch": "ㅝ",
+   "group": "compound",
+   "sound": "вө",
+   "say": "워",
+   "ex_ko": "더워요",
+   "ex_mn": "халуун байна"
+  },
+  {
+   "id": "h38",
+   "ch": "ㅞ",
+   "group": "compound",
+   "sound": "вэ",
+   "say": "웨",
+   "ex_ko": "웨이터",
+   "ex_mn": "зөөгч"
+  },
+  {
+   "id": "h39",
+   "ch": "ㅟ",
+   "group": "compound",
+   "sound": "ви",
+   "say": "위",
+   "ex_ko": "위",
+   "ex_mn": "дээр"
+  },
+  {
+   "id": "h40",
+   "ch": "ㅢ",
+   "group": "compound",
+   "sound": "ый",
+   "say": "의",
+   "ex_ko": "의사",
+   "ex_mn": "эмч"
+  }
+ ]
+}
