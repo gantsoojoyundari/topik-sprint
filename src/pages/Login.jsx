@@ -37,7 +37,7 @@ export default function Login() {
         <Bow className="mb-2 w-14" />
         <h1 className="text-2xl font-semibold tracking-tight">TOPIK II Sprint</h1>
         <Whiskers className="mt-1 w-8 text-muted" />
-        <p className="mt-2 text-sm text-muted">Хэрэглэгчийн нэр, 4 оронтой кодоороо нэвтэрнэ.</p>
+        <p className="mt-2 text-sm text-muted">Хэрэглэгчийн нэр, 4 оронтой кодоороо нэвтэрнэ. TOPIK, HSK хоёр апп-д нэг л аккаунт — аль ч төхөөрөмжөөс үргэлжлүүлнэ.</p>
       </div>
 
       <Card>

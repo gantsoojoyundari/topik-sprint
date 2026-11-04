@@ -6,6 +6,8 @@ const SESSION_TTL = 60 * 60 * 24 * 365; // 1 жил
 const MAX_FAILS = 8; // ингэтэл буруу код оруулбал 15 минут түгжинэ
 const LOCK_TTL = 15 * 60;
 const MAX_DATA = 900_000; // байт
+// topik-sprint, hsk хоёр нэг Redis санг хуваалцана: нэр+код (user:, sess:) нийтлэг, явц нь апп бүрт тусдаа.
+const APP = "topik";
 
 // ---------- Хадгалах сан ----------
 
@@ -88,7 +90,7 @@ async function userFromToken(token) {
 }
 
 async function readData(key) {
-  const raw = await cmd("GET", `data:${key}`);
+  const raw = await cmd("GET", `data:${APP}:${key}`);
   return raw ? JSON.parse(raw) : null;
 }
 
@@ -114,7 +116,7 @@ export async function handleAccount(body = {}, authHeader = "") {
         const created = await cmd("SET", `user:${key}`, JSON.stringify(user), "NX");
         if (!created) return err(409, "Энэ нэр аль хэдийн бүртгэлтэй байна. Өөр нэр сонгох эсвэл «Нэвтрэх»-ээр орно уу.", { code: "taken" });
         const data = body.data && typeof body.data === "object" ? body.data : null;
-        if (data) await cmd("SET", `data:${key}`, JSON.stringify(data));
+        if (data) await cmd("SET", `data:${APP}:${key}`, JSON.stringify(data));
         return ok({ token: await newSession(key), name, data });
       }
 
@@ -148,8 +150,21 @@ export async function handleAccount(body = {}, authHeader = "") {
         if (!key) return err(401, "Нэвтрэх хугацаа дууссан.");
         const raw = JSON.stringify(body.data ?? null);
         if (raw.length > MAX_DATA) return err(413, "Өгөгдөл хэт том байна.");
-        await cmd("SET", `data:${key}`, raw);
+        await cmd("SET", `data:${APP}:${key}`, raw);
         return ok({ saved: true });
+      }
+
+      case "delete": {
+        const key = await userFromToken(token);
+        if (!key) return err(401, "Нэвтрэх хугацаа дууссан.");
+        const raw = await cmd("GET", `user:${key}`);
+        const user = raw ? JSON.parse(raw) : null;
+        if (!user || !/^\d{4}$/.test(String(body.pin ?? ""))) return err(401, "Код буруу байна.");
+        const match = timingSafeEqual(Buffer.from(hashPin(body.pin, user.salt), "hex"), Buffer.from(user.hash, "hex"));
+        if (!match) return err(401, "Код буруу байна.", { code: "bad_pin" });
+        // Аккаунт хоёр апп-д нийтлэг тул хоёр апп-ын явцыг хамт устгана.
+        for (const k of [`user:${key}`, "data:topik:" + key, "data:hsk:" + key, `sess:${token}`]) await cmd("DEL", k);
+        return ok({ deleted: true });
       }
 
       case "logout": {

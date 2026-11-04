@@ -3,7 +3,7 @@ import { useStore, update, resetAll, getState } from "../lib/store.js";
 import { setTheme } from "../lib/theme.js";
 import { today, addDays } from "../lib/dates.js";
 import { Page, Card, Button, cx } from "../components/ui.jsx";
-import { logout, useSession, useSyncStatus } from "../lib/account.js";
+import { logout, deleteAccount, useSession, useSyncStatus } from "../lib/account.js";
 
 const SYNC_LABEL = { idle: "Сервер дээр хадгалагдсан", saved: "Сервер дээр хадгалагдсан", saving: "Хадгалж байна…", offline: "Интернэтгүй — холбогдмогц хадгална", local: "Одоогоор энэ төхөөрөмж дээр хадгалагдаж байна" };
 
@@ -25,6 +25,17 @@ export default function Settings() {
   const [confirm, setConfirm] = useState(false);
   const session = useSession();
   const sync = useSyncStatus();
+  const [delOpen, setDelOpen] = useState(false);
+  const [delPin, setDelPin] = useState("");
+  const [delErr, setDelErr] = useState("");
+  async function removeAccount() {
+    setDelErr("");
+    try {
+      await deleteAccount(delPin);
+    } catch (e) {
+      setDelErr(e.message);
+    }
+  }
 
   const setProfile = (patch) =>
     update((s) => {
@@ -106,6 +117,31 @@ export default function Settings() {
             </div>
           ) : (
             <Button variant="ghost" className="w-full text-bad" onClick={() => setConfirm(true)}>Бүх өгөгдлийг устгах</Button>
+          )}
+        </Card>
+
+        <Card className="space-y-2">
+          <p className="text-sm font-medium">Аккаунт устгах</p>
+          <p className="text-xs text-muted">«{session?.name}» аккаунт, түүний явцыг TOPIK, HSK хоёр апп-аас бүрмөсөн устгана. Буцаах боломжгүй.</p>
+          {delOpen ? (
+            <div className="space-y-2">
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={delPin}
+                onChange={(e) => setDelPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                placeholder="Кодоо оруулна уу"
+                className="w-full rounded-xl border border-line bg-surface p-3 tracking-[0.3em]"
+              />
+              {delErr && <p className="text-sm text-bad">{delErr}</p>}
+              <div className="flex gap-2">
+                <Button className="flex-1 bg-bad text-white" disabled={delPin.length !== 4} onClick={removeAccount}>Тийм, аккаунтыг устга</Button>
+                <Button variant="outline" onClick={() => (setDelOpen(false), setDelPin(""), setDelErr(""))}>Болих</Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="ghost" className="w-full text-bad" onClick={() => setDelOpen(true)}>Аккаунт устгах</Button>
           )}
         </Card>
       </div>

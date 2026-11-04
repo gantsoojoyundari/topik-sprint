@@ -4,6 +4,17 @@ import { useSyncExternalStore } from "react";
 import { openUser, replaceState, closeUser, cachedData, legacyData, clearLegacy, getState } from "./store.js";
 import { applyTheme } from "./theme.js";
 
+// 2026-11-03: хэрэглэгчийн хүсэлтээр бүх хуучин аккаунт, явцыг төхөөрөмж бүр дээр нэг удаа устгана.
+const RESET_ID = "2026-11-03";
+try {
+  if (localStorage.getItem("topik-sprint:reset") !== RESET_ID) {
+    for (const key of Object.keys(localStorage)) if (key === "topik-sprint" || key.startsWith("topik-sprint:")) localStorage.removeItem(key);
+    localStorage.setItem("topik-sprint:reset", RESET_ID);
+  }
+} catch {
+  /* хувийн цонх гэх мэт */
+}
+
 const SESSION_KEY = "topik-sprint:session";
 const LOCAL_ACCOUNTS = "topik-sprint:accounts"; // өмнөх (зөвхөн төхөөрөмж дээрх) хувилбарын аккаунтууд
 let session = readSession();
@@ -177,6 +188,31 @@ export async function login(name, pin) {
     const res = await call("register", { name: acc.name, pin, data });
     activate({ ...res, data: res.data ?? data });
   }
+}
+
+/** Аккаунтыг бүрмөсөн устгана (код шаардана): сервер + энэ төхөөрөмж дээрх кэш. */
+export async function deleteAccount(pin) {
+  if (!session) return;
+  const key = userKey(session.name);
+  const acc = (readJson(LOCAL_ACCOUNTS) ?? {})[key];
+  if (session.token === "local" || acc) {
+    if (acc && !(await localAccount(session.name, pin))) throw new Error("Код буруу байна.");
+  }
+  if (session.token !== "local") {
+    try {
+      await call("delete", { pin });
+    } catch (e) {
+      if (e.code !== "no_storage" || !acc) throw e;
+    }
+  }
+  const accounts = readJson(LOCAL_ACCOUNTS) ?? {};
+  delete accounts[key];
+  writeJson(LOCAL_ACCOUNTS, accounts);
+  clearTimeout(timer);
+  pending = false;
+  expire();
+  writeJson(`topik-sprint:u:${key}`, null);
+  applyTheme("light");
 }
 
 function expire() {
