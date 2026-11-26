@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import hangul from "../data/hangul.json";
-import { useStore, update, markTask } from "../lib/store.js";
+import { useStore, update, markTask, NONE } from "../lib/store.js";
 import { today } from "../lib/dates.js";
 import { playClips } from "../lib/sound.js";
 import { Page, Card, Button, Bar, Bow, Ko, useAutoNext, cx } from "../components/ui.jsx";
@@ -21,7 +21,7 @@ export default function Hangul() {
   const [mode, setMode] = useState("learn");
   const [open, setOpen] = useState(null);
   const [round, setRound] = useState(0);
-  const scores = useStore((s) => s.hangul ?? {});
+  const scores = useStore((s) => s.hangul ?? NONE);
   const p = hangulProgress(scores);
 
   if (mode === "quiz") return <Quiz key={round} onExit={() => setMode("learn")} onAgain={() => setRound((r) => r + 1)} />;
@@ -118,7 +118,7 @@ function makeQuestion(letter, i, known) {
 }
 
 function Quiz({ onExit, onAgain }) {
-  const scores0 = useStore((s) => s.hangul ?? {});
+  const scores0 = useStore((s) => s.hangul ?? NONE);
   const p = useMemo(() => plan(scores0), []); // eslint-disable-line react-hooks/exhaustive-deps
   const questions = useMemo(() => {
     const known = hangul.letters.filter((l) => scores0[l.id] !== undefined || p.teach.includes(l));

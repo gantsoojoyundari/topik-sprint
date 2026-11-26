@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useStore, update, markTask, recordAttempt } from "../lib/store.js";
+import { useStore, update, markTask, recordAttempt, NONE } from "../lib/store.js";
 import { today } from "../lib/dates.js";
 import { playClips } from "../lib/sound.js";
 import { galig } from "../lib/galig.js";
@@ -28,7 +28,7 @@ export default function Dictation() {
 
 function Round({ kind, setKind, mode, setMode, onAgain }) {
   const srs = useStore((s) => s.srs);
-  const done = useStore((s) => s.dictation ?? {});
+  const done = useStore((s) => s.dictation ?? NONE);
   const sentenceList = useSentences();
   const storyList = useStories();
   const set = useMemo(() => pickItems({ kind, n: SESSION, srs, done, items: buildItems(sentenceList, storyList) }), []); // eslint-disable-line react-hooks/exhaustive-deps

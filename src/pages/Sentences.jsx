@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSentences } from "../lib/content.js";
-import { useStore, update, markTask, recordAttempt } from "../lib/store.js";
+import { useStore, update, markTask, recordAttempt, NONE } from "../lib/store.js";
 import { today } from "../lib/dates.js";
 import { playClips } from "../lib/sound.js";
 import { Finish } from "../components/Finish.jsx";
@@ -17,7 +17,7 @@ export default function Sentences() {
 }
 
 function SentencesRound({ onAgain }) {
-  const done = useStore((s) => s.sentences ?? {});
+  const done = useStore((s) => s.sentences ?? NONE);
   const srs = useStore((s) => s.srs);
   const sentences = useSentences();
   // Сурсан үгсээрээ бүтсэн, цөөн удаа хийсэн өгүүлбэрүүдийг түрүүлж (санамсаргүй дарааллаар).

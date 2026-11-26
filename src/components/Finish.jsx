@@ -9,7 +9,9 @@ import { Card, Button, Bow, Bar } from "./ui.jsx";
 export function Finish({ score, total, note = "зөв", xp, onAgain }) {
   const DAILY_GOAL = useConfig().dailyGoal || 30;
   const todayXp = useStore((s) => s.log?.[today()]?.xp ?? 0);
-  useEffect(() => sfxDone(), []);
+  useEffect(() => {
+    sfxDone();
+  }, []);
   const pct = total ? score / total : 1;
   const title = pct === 1 ? "Төгс! 🏆" : pct >= 0.7 ? "Гайхалтай! 🎉" : "Сайн байна! 💪";
   return (

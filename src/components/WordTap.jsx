@@ -72,7 +72,7 @@ function WordSheet({ tok, onClose }) {
             </p>
             <button onClick={() => playClips([`vocab/${id}-ex`], w.ex_ko)} className="mt-2 block text-left">
               <Ko text={`🔊 ${w.ex_ko}`} className="text-base" galigClassName="text-xs" />
-              <span className="text-muted">{w.ex_mn}</span>
+              <span className="block text-muted">{w.ex_mn}</span>
             </button>
           </div>
         )}

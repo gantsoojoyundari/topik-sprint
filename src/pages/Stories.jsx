@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useStories } from "../lib/content.js";
-import { useStore, update, markTask, recordAttempt } from "../lib/store.js";
+import { useStore, update, markTask, recordAttempt, NONE } from "../lib/store.js";
 import { today } from "../lib/dates.js";
 import { playClips } from "../lib/sound.js";
 import { TapSentence } from "../components/WordTap.jsx";
@@ -18,7 +18,7 @@ export default function Stories() {
 }
 
 function List({ stories, onOpen }) {
-  const done = useStore((s) => s.stories ?? {});
+  const done = useStore((s) => s.stories ?? NONE);
   const srs = useStore((s) => s.srs);
   const finished = stories.filter((s) => done[s.id]).length;
   return (
@@ -79,7 +79,9 @@ function Reader({ story, onExit }) {
     }
   }, [i]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" }), [i, shown, finished]);
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [i, shown, finished]);
 
   function next() {
     if (!shown) return setShown(true);

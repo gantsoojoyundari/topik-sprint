@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useStore, update, markTask, recordAttempt } from "../lib/store.js";
+import { useStore, update, markTask, recordAttempt, NONE } from "../lib/store.js";
 import { today } from "../lib/dates.js";
 import { playClips } from "../lib/sound.js";
 import { useSentences, useStories } from "../lib/content.js";
@@ -22,7 +22,7 @@ export default function Speaking() {
 
 function Round({ kind, setKind, onAgain }) {
   const srs = useStore((s) => s.srs);
-  const done = useStore((s) => s.speaking ?? {});
+  const done = useStore((s) => s.speaking ?? NONE);
   const sentenceList = useSentences();
   const storyList = useStories();
   const set = useMemo(() => pickItems({ kind, n: SESSION, srs, done, items: buildItems(sentenceList, storyList) }), []); // eslint-disable-line react-hooks/exhaustive-deps

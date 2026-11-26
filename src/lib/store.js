@@ -4,6 +4,9 @@ import { useSyncExternalStore } from "react";
 import { today } from "./dates.js";
 export { streak, isActiveDay } from "./streak.js";
 
+/** useStore selector-т `?? NONE` — шинэ {} буцаавал React төгсгөлгүй давтана (#185). */
+export const NONE = Object.freeze({});
+
 const KEY = "topik-sprint";
 const VERSION = 1;
 
