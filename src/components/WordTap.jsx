@@ -1,83 +1,79 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import vocab from "../data/vocab.json";
-import { useStore } from "../lib/store.js";
-import { playClips } from "../lib/sound.js";
-import { galig } from "../lib/galig.js";
-import { Ko, Button, cx } from "./ui.jsx";
+import { playClips, speakText } from "../lib/sound.js";
+import { Ko, cx } from "./ui.jsx";
 
 const byId = Object.fromEntries(vocab.words.map((w) => [w.id, w]));
 
 /**
  * Үг бүр дээр дарж болдог өгүүлбэр. tokens: [[ko, контекст дэх утга, vocabId], ...]
- * Дарахад доороос үгийн карт гарч ирнэ (Duolingo-гийн «hover hint» шиг).
+ * Дарахад үгийн доор жижиг бөмбөлөгт утга гарч, дуудлагыг нь уншина (Duolingo-гийн hint шиг).
+ * highlight: үг бүрийн зөв/буруу (ярианы үнэлгээ). active: одоо дуугарч буй үгийн индекс (караоке).
  */
-export function TapSentence({ tokens, className, size = "text-2xl", highlight }) {
+export function TapSentence({ tokens, className, size = "text-2xl", highlight, active = -1 }) {
   const [open, setOpen] = useState(null);
-  return (
-    <>
-      <span className={cx("flex flex-wrap items-start gap-x-2 gap-y-1", className)}>
-        {tokens.map((tok, k) => (
-          <button
-            key={k}
-            onClick={() => setOpen(tok)}
-            className={cx(
-              "rounded-lg border-b-2 border-dotted border-muted/60 px-0.5 text-left transition hover:bg-listening-soft",
-              highlight?.[k] === true && "bg-writing-soft text-good",
-              highlight?.[k] === false && "bg-reading-soft text-bad",
-            )}
-          >
-            <Ko text={tok[0]} className={size} galigClassName="text-xs" />
-          </button>
-        ))}
-      </span>
-      {open && <WordSheet tok={open} onClose={() => setOpen(null)} />}
-    </>
-  );
-}
+  const root = useRef(null);
 
-function WordSheet({ tok, onClose }) {
-  const [ko, gloss, id] = tok;
-  const w = byId[id];
-  const learned = useStore((s) => !!s.srs?.[id]);
+  // Гадна дарахад бөмбөлгийг хаана.
+  useEffect(() => {
+    if (open == null) return;
+    const close = (e) => {
+      if (!root.current?.contains(e.target)) setOpen(null);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open]);
+
+  function tap(k) {
+    if (open === k) return setOpen(null);
+    setOpen(k);
+    const [ko, , id] = tokens[k];
+    const w = byId[id];
+    const plain = ko.replace(/[.?!]/g, "");
+    // Үгийг өөрийг нь уншина (байгаа бол бэлэн MP3, үгүй бол TTS).
+    if (w && plain === w.ko) playClips([`vocab/${id}`], w.ko);
+    else speakText(plain);
+  }
+
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/30" onClick={onClose}>
-      <div
-        className="w-full max-w-xl rounded-t-3xl border-t-2 border-line bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="ko text-3xl font-bold" lang="ko">{ko}</p>
-            <p className="text-sm text-muted">{galig(ko)}</p>
-          </div>
-          <button
-            onClick={() => (w ? playClips([`vocab/${id}`], w.ko) : null)}
-            className="grid size-12 shrink-0 place-items-center rounded-full bg-accent text-xl text-white"
-            aria-label="Сонсох"
-          >
-            🔊
-          </button>
-        </div>
-        <p className="mt-3 text-lg font-semibold">{gloss}</p>
-        {w && (
-          <div className="mt-3 rounded-2xl bg-listening-soft p-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Толь бичгийн хэлбэр</span>
-              <span className={cx("rounded-full px-2 py-0.5 text-xs font-medium", learned ? "bg-writing-soft text-good" : "bg-line text-muted")}>
-                {learned ? "Сурсан ✓" : "Шинэ үг"}
-              </span>
-            </div>
-            <p className="mt-1">
-              <span className="ko font-semibold" lang="ko">{w.ko}</span> — {w.mn}
-            </p>
-            <button onClick={() => playClips([`vocab/${id}-ex`], w.ex_ko)} className="mt-2 block text-left">
-              <Ko text={`🔊 ${w.ex_ko}`} className="text-base" galigClassName="text-xs" />
-              <span className="block text-muted">{w.ex_mn}</span>
+    <span ref={root} className={cx("flex flex-wrap items-start gap-x-2 gap-y-1", className)}>
+      {tokens.map((tok, k) => {
+        const w = byId[tok[2]];
+        const right = k > 0 && k >= tokens.length / 2;
+        return (
+          <span key={k} className="relative">
+            <button
+              onClick={() => tap(k)}
+              className={cx(
+                "rounded-lg border-b-2 border-dotted border-muted/60 px-0.5 text-left transition-colors",
+                open === k && "bg-listening-soft",
+                active === k && "bg-accent text-white",
+                active > k && "text-accent",
+                highlight?.[k] === true && "bg-writing-soft text-good",
+                highlight?.[k] === false && "bg-reading-soft text-bad",
+              )}
+            >
+              <Ko text={tok[0]} className={size} galigClassName="text-xs" />
             </button>
-          </div>
-        )}
-        <Button variant="outline" className="mt-4 w-full" onClick={onClose}>Хаах</Button>
-      </div>
-    </div>
+            {open === k && (
+              <span
+                className={cx(
+                  "absolute top-full z-30 mt-2 w-max max-w-[min(14rem,80vw)] rounded-xl bg-ink px-3 py-2 text-left text-sm font-normal leading-snug text-surface shadow-lg",
+                  right ? "right-0" : "left-0",
+                )}
+              >
+                <span className={cx("absolute -top-1.5 size-3 rotate-45 bg-ink", right ? "right-4" : "left-4")} />
+                <span className="relative block font-semibold">{tok[1]}</span>
+                {w && tok[0].replace(/[.?!]/g, "") !== w.ko && (
+                  <span className="relative block text-xs opacity-75">
+                    <span className="ko" lang="ko">{w.ko}</span> — {w.mn}
+                  </span>
+                )}
+              </span>
+            )}
+          </span>
+        );
+      })}
+    </span>
   );
 }

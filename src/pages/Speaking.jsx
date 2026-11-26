@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore, update, markTask, recordAttempt, NONE } from "../lib/store.js";
 import { today } from "../lib/dates.js";
-import { playClips } from "../lib/sound.js";
+import { playWithProgress, activeToken } from "../lib/sound.js";
 import { useSentences, useStories } from "../lib/content.js";
 import { buildItems, pickItems, similarity, tokenHits } from "../lib/items.js";
 import { canRecognize, canRecord, useRecognizer, useRecorder } from "../lib/voice.js";
@@ -75,7 +75,20 @@ function SpeakItem({ item, onDone }) {
   const [result, setResult] = useState(null); // { said, hits, sim, ok }
   const [tries, setTries] = useState(0);
   const [slow, setSlow] = useState(false);
-  const say = (rate = slow ? 0.7 : 1) => playClips([item.clip], item.ko, rate);
+  // Эхний ээлж: YouTube-ийн хадмал шиг сонсож ойлгоно (үг нэг нэгээр тодорно) → дараа нь хэлнэ.
+  const [phase, setPhase] = useState("watch"); // watch | speak
+  const [prog, setProg] = useState(0);
+  const stopRef = useRef(null);
+  const say = (rate = slow ? 0.7 : 1, then) => {
+    stopRef.current?.();
+    setProg(0);
+    stopRef.current = playWithProgress(item.clip, item.ko, { rate, onProgress: setProg, onEnd: then });
+  };
+  const watch = (rate = 1) => {
+    setPhase("watch");
+    say(rate, () => setTimeout(() => setPhase("speak"), 500));
+  };
+  useEffect(() => () => stopRef.current?.(), []);
   const rec = useRecorder();
 
   const recog = useRecognizer((alts) => {
@@ -90,30 +103,40 @@ function SpeakItem({ item, onDone }) {
   });
 
   useEffect(() => {
-    const t = setTimeout(() => say(), 300);
+    const t = setTimeout(() => watch(), 300);
     return () => clearTimeout(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useAutoNext(!!result?.ok, () => onDone(tries === 1), 1600);
+  // Зөв хэлбэл хүлээлгүй шууд дараагийнх руу.
+  useAutoNext(!!result?.ok, () => onDone(tries === 1), 650);
+  const active = prog > 0 && prog < 1 ? activeToken(item.t, prog) : -1;
 
   return (
     <div className="mt-4 space-y-4">
       <Card className="relative">
         <Bow className="absolute -right-2 -top-3 w-10 rotate-12" />
-        <p className="text-sm text-muted">Сонсоод, чангаар давтаж хэл:</p>
+        <p className="text-sm text-muted">{phase === "watch" ? "🎬 1. Эхлээд сонсоод ойлго" : "🎤 2. Одоо чангаар давтаж хэл"}</p>
         <div className="mt-3 flex items-start gap-3">
           <div className="flex flex-col gap-2">
             <button onClick={() => say(1)} className="grid size-12 place-items-center rounded-full bg-accent text-xl text-white" aria-label="Сонсох">🔊</button>
             <button onClick={() => { setSlow(true); say(0.7); }} className="grid size-12 place-items-center rounded-full bg-line text-xl" aria-label="Удаан сонсох">🐢</button>
           </div>
           <div className="min-w-0 flex-1">
-            <TapSentence tokens={item.t} size="text-2xl font-semibold" highlight={result?.hits} />
-            <p className="mt-2 text-muted">{item.mn}</p>
+            <TapSentence tokens={item.t} size="text-2xl font-semibold" highlight={result?.hits} active={active} />
           </div>
         </div>
+        {/* YouTube-ийн хадмал шиг орчуулга */}
+        <div className="mt-3 rounded-lg bg-ink/85 px-3 py-2 text-center text-base font-medium text-surface">{item.mn}</div>
       </Card>
 
-      {canRecognize ? (
+      {phase === "watch" && (
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={() => watch(slow ? 0.7 : 1)}>▶ Дахин сонсох</Button>
+          <Button onClick={() => { stopRef.current?.(); setProg(0); setPhase("speak"); }}>Ойлголоо, хэлье 🎤</Button>
+        </div>
+      )}
+
+      {phase === "watch" ? null : canRecognize ? (
         <div className="flex flex-col items-center gap-2 py-2">
           <button
             onClick={recog.listening ? recog.stop : recog.start}
