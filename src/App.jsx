@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useStore } from "./lib/store.js";
+import { useStore, update } from "./lib/store.js";
+import { today, addDays } from "./lib/dates.js";
 import { cx } from "./components/ui.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
 import Login from "./pages/Login.jsx";
@@ -81,8 +82,19 @@ function Main() {
   const profile = useStore((s) => s.profile);
   const diagnostic = useStore((s) => s.diagnostic);
   const route = useHashRoute();
+  const admin = !!useSession()?.admin;
 
-  if (!profile || !diagnostic?.seen) return <Onboarding />;
+  // Админд эхний тохиргоо, оношлох тест асуухгүй — анхдагч утгаар шууд нээнэ.
+  useEffect(() => {
+    if (!admin || (profile && diagnostic?.seen)) return;
+    update((s) => {
+      s.profile ??= { targetLevel: 4, examDate: addDays(today(), 56), startDate: today(), minutesPerDay: 60 };
+      if (!s.diagnostic?.seen) s.diagnostic = { scores: null, skipped: true, seen: true, completedAt: Date.now() };
+      s.settings.unlockAll = true;
+    });
+  }, [admin, profile, diagnostic]);
+
+  if (!profile || !diagnostic?.seen) return admin ? null : <Onboarding />;
 
   const Screen = ROUTES[route] ?? Home;
   const active = PRACTICE_ROUTES.includes(route) ? "practice" : route === "plan" || route === "settings" || route === "admin" ? "" : route;

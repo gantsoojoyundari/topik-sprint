@@ -1,6 +1,7 @@
 // Нэр + 4–6 оронтой кодоор нэвтрэх аккаунт. Имэйл шаардлагагүй.
-// Production-д Upstash Redis (Vercel Storage) REST API ашиглана; dev-д санах ойд хадгална.
+// Production-д Upstash Redis эсвэл Vercel Blob (private) ашиглана; dev-д санах ойд хадгална.
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import * as vercelBlob from "@vercel/blob";
 
 const SESSION_TTL = 60 * 60 * 24 * 365; // 1 жил
 const MAX_FAILS = 8; // ингэтэл буруу код оруулбал 15 минут түгжинэ
@@ -19,8 +20,62 @@ function redisEnv() {
 
 const mem = new Map(); // dev fallback: key → { v, exp }
 
+// ---------- Vercel Blob (private) — Redis байхгүй үеийн хадгалах сан ----------
+const blobOn = () => !!(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
+const hasStore = () => !!redisEnv() || blobOn();
+const bpath = (key) => `kv/${encodeURIComponent(key)}.json`;
+let B = vercelBlob;
+/** Тестэд: хуурамч Blob-оор солих. */
+export const __setBlob = (impl) => (B = impl ?? vercelBlob);
+const BOPT = { access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: "application/json", cacheControlMaxAge: 60 };
+
+async function bread(key) {
+  const r = await B.get(bpath(key), { access: "private", useCache: false }).catch(() => null);
+  if (!r?.stream) return null;
+  const rec = JSON.parse(await new Response(r.stream).text());
+  return rec.exp && rec.exp < Date.now() ? null : rec;
+}
+const bwrite = (key, v, exp = 0) => B.put(bpath(key), JSON.stringify({ v, exp }), BOPT);
+
+async function blobCmd(op, key, ...rest) {
+  switch (op) {
+    case "GET":
+      return (await bread(key))?.v ?? null;
+    case "SET": {
+      if (rest.includes("NX") && (await bread(key))) return null;
+      const ex = rest.indexOf("EX");
+      await bwrite(key, rest[0], ex >= 0 ? Date.now() + Number(rest[ex + 1]) * 1000 : 0);
+      return "OK";
+    }
+    case "DEL":
+      await B.del(bpath(key)).catch(() => {});
+      return 1;
+    case "INCR": {
+      const cur = await bread(key);
+      const n = Number(cur?.v ?? 0) + 1;
+      await bwrite(key, String(n), cur?.exp ?? 0);
+      return n;
+    }
+    case "EXPIRE": {
+      const cur = await bread(key);
+      if (cur) await bwrite(key, cur.v, Date.now() + Number(rest[0]) * 1000);
+      return 1;
+    }
+    case "SCAN": {
+      // SCAN cursor MATCH prefix* COUNT n
+      const prefix = String(rest[1] ?? "").replace(/\*$/, "");
+      const res = await B.list({ prefix: `kv/${encodeURIComponent(prefix)}`, cursor: key === "0" ? undefined : key, limit: 1000 });
+      const keys = res.blobs.map((b) => decodeURIComponent(b.pathname.slice(3, -5)));
+      return [res.hasMore ? res.cursor : "0", keys];
+    }
+    default:
+      throw new Error(`unsupported ${op}`);
+  }
+}
+
 async function cmd(...args) {
   const env = redisEnv();
+  if (!env && blobOn()) return blobCmd(...args);
   if (env) {
     const r = await fetch(env.url, {
       method: "POST",
@@ -173,7 +228,7 @@ function verifyAdmin(token) {
 
 export async function handleAccount(body = {}, authHeader = "") {
   const token = authHeader.replace(/^Bearer\s+/i, "") || body.token;
-  if (!redisEnv() && process.env.VERCEL) {
+  if (!hasStore() && process.env.VERCEL) {
     const key = keyOf(body.name);
     const adminLogin =
       (body.action === "login" || body.action === "register") && isAdmin(key) && adminPin() && String(body.pin) === adminPin();
