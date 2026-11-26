@@ -54,14 +54,6 @@ export default function Settings() {
   return (
     <Page title="Тохиргоо" back="#/">
       <div className="space-y-3">
-        <Card className="flex items-center gap-3">
-          <div className="flex-1">
-            <p className="text-sm font-medium">{session?.name}</p>
-            <p className={cx("text-xs", sync === "offline" ? "text-bad" : "text-muted")}>{SYNC_LABEL[sync]}</p>
-          </div>
-          <Button variant="outline" onClick={logout}>Гарах</Button>
-        </Card>
-
         {session?.admin && (
           <a href="#/admin" className="block">
             <Card className="flex items-center gap-3 border-accent hover:bg-line/40">
@@ -74,6 +66,14 @@ export default function Settings() {
             </Card>
           </a>
         )}
+
+        <Card className="flex items-center gap-3">
+          <div className="flex-1">
+            <p className="text-sm font-medium">{session?.name}</p>
+            <p className={cx("text-xs", sync === "offline" ? "text-bad" : "text-muted")}>{SYNC_LABEL[sync]}</p>
+          </div>
+          <Button variant="outline" onClick={logout}>Гарах</Button>
+        </Card>
 
         <Card className="space-y-2">
           <p className="text-sm font-medium">Харагдац</p>

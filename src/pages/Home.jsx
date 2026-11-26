@@ -6,6 +6,7 @@ import { beginnerState, beginnerTasks } from "../lib/beginner.js";
 import vocab from "../data/vocab.json";
 import { Page, Card, Bar, Pill, TONE, Bow, cx } from "../components/ui.jsx";
 import { BeginnerPath } from "../components/BeginnerPath.jsx";
+import { useSession } from "../lib/account.js";
 
 export function useToday() {
   const state = useStore();
@@ -35,6 +36,7 @@ export function useToday() {
 
 export default function Home() {
   const { state, date, info, tasks, log, queue, beginner } = useToday();
+  const session = useSession();
   const s = streak(state.log, date);
   const vocabLeft = queue.due.length + queue.fresh.length;
   const openMistakes = state.mistakes.filter((m) => !m.resolved).length;
@@ -47,6 +49,13 @@ export default function Home() {
 
   return (
     <Page>
+      {session?.admin && (
+        <a href="#/admin" className="mb-4 flex items-center gap-3 rounded-2xl bg-accent px-4 py-3 text-white shadow hover:opacity-90">
+          <span className="text-xl">🛡️</span>
+          <span className="flex-1 font-semibold">Админ самбар</span>
+          <span className="text-sm opacity-90">Хэрэглэгчид · Агуулга ›</span>
+        </a>
+      )}
       <header className="mb-5 flex items-start justify-between">
         <div>
           <p className="text-sm text-muted">{formatMn(date)}</p>
