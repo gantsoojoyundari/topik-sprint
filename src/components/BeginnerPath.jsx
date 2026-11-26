@@ -1,4 +1,5 @@
 import { STEPS } from "../lib/beginner.js";
+import { getConfig } from "../lib/content.js";
 import { Card, Bar, Bow, cx } from "./ui.jsx";
 
 /** Эхлэгчийн алхмууд — нээгдсэн, түгжээтэй, явцтай нь. */
@@ -8,7 +9,9 @@ export function BeginnerPath({ b }) {
     vocab: [b.words, b.wordsTotal],
   };
   const lockNote = { vocab: `Үндсэн ${b.basicLettersTotal} үсгээ сурвал нээгдэнэ (${b.lettersBasic}/${b.basicLettersTotal})` };
-  for (const s of STEPS) if (s.need) lockNote[s.id] = `${s.need} үг сурвал нээгдэнэ (${Math.min(b.words, s.need)}/${s.need})`;
+  const cfg = getConfig();
+  const needOf = (s) => (s.id === "listening" ? cfg.listeningAt : s.id === "sentence" ? cfg.sentenceAt : s.need);
+  for (const s of STEPS) if (s.need) lockNote[s.id] = !b.unlocked[s.id] && cfg[s.id] === false ? "Админ түр хаасан" : `${needOf(s)} үг сурвал нээгдэнэ (${Math.min(b.words, needOf(s))}/${needOf(s)})`;
   return (
     <Card className="relative space-y-3">
       <Bow className="absolute -right-2 -top-3 w-10 rotate-12" />

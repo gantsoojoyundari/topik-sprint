@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import vocab from "../data/vocab.json";
 import { useSession, adminCall } from "../lib/account.js";
 import { useStore, update } from "../lib/store.js";
-import { useExtra, setExtra } from "../lib/content.js";
+import { useExtra, setExtra, DEFAULT_CONFIG } from "../lib/content.js";
 import { TapSentence } from "../components/WordTap.jsx";
 import { Page, Card, Button, Empty, Pill, cx } from "../components/ui.jsx";
 
@@ -10,7 +10,11 @@ import { Page, Card, Button, Empty, Pill, cx } from "../components/ui.jsx";
 
 export default function Admin() {
   const session = useSession();
-  const [tab, setTab] = useState("users");
+  const [tab, setTab] = useState("settings");
+  const [noStore, setNoStore] = useState(false);
+  useEffect(() => {
+    adminCall("content_get").catch((e) => setNoStore(e.code === "no_storage"));
+  }, []);
   if (!session?.admin) {
     return (
       <Page title="Админ" back="#/settings">
@@ -20,8 +24,14 @@ export default function Admin() {
   }
   return (
     <Page title="Админ самбар" back="#/settings">
+      {noStore && (
+        <div className="mb-4 rounded-2xl border-2 border-bad bg-reading-soft p-3 text-sm">
+          <p className="font-semibold text-bad">⚠️ Хадгалах сан (Redis) холбогдоогүй</p>
+          <p className="mt-1">Тохиргоо, агуулга хадгалагдахгүй, хэрэглэгчдийн жагсаалт гарахгүй. Vercel → topik-sprint → <b>Storage → Create Database → Upstash for Redis (Free) → Connect</b> хийгээд Redeploy дарна.</p>
+        </div>
+      )}
       <div className="mb-4 flex gap-1 rounded-xl bg-line/60 p-1 text-sm">
-        {[["users", "👥 Хэрэглэгчид"], ["content", "📚 Агуулга"], ["settings", "⚙️ Тохиргоо"]].map(([k, l]) => (
+        {[["settings", "⚙️ Апп тохиргоо"], ["users", "👥 Хэрэглэгчид"], ["content", "📚 Агуулга"]].map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} className={cx("flex-1 rounded-lg py-2", tab === k ? "bg-surface font-semibold shadow" : "text-muted")}>
             {l}
           </button>
@@ -286,31 +296,97 @@ function Row({ label, note, onDelete }) {
   );
 }
 
-// ---------------- Тохиргоо ----------------
+// ---------------- Апп тохиргоо (бүх хэрэглэгчид) ----------------
 
 function AdminSettings() {
+  const extra = useExtra();
   const unlockAll = useStore((s) => !!s.settings?.unlockAll);
+  const [cfg, setCfg] = useState(() => ({ ...DEFAULT_CONFIG, ...(extra.config ?? {}) }));
+  const [msg, setMsg] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const set = (k, v) => setCfg((c) => ({ ...c, [k]: v }));
+
+  async function save() {
+    setSaving(true);
+    setMsg(null);
+    try {
+      const { content } = await adminCall("content_save", { content: { ...extra, config: cfg } });
+      setExtra(content);
+      setMsg({ ok: true, text: "Хадгаллаа ✓ — бүх хэрэглэгчид дараагийн нээлтэд хүчинтэй." });
+    } catch (e) {
+      setMsg({ ok: false, text: e.code === "no_storage" ? "Хадгалах сан (Redis) холбогдоогүй тул хадгалагдсангүй." : e.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const num = (k, label, hint, min, max) => (
+    <label className="flex items-center justify-between gap-3">
+      <span className="text-sm">
+        {label}
+        <span className="block text-xs text-muted">{hint}</span>
+      </span>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={cfg[k]}
+        onChange={(e) => set(k, Math.max(min, Math.min(max, Number(e.target.value) || min)))}
+        className="w-20 rounded-lg border border-line bg-surface px-2 py-1.5 text-right tabular-nums"
+      />
+    </label>
+  );
+  const sw = (k, label, hint, invert = false) => (
+    <label className="flex items-center justify-between gap-3">
+      <span className="text-sm">
+        {label}
+        {hint && <span className="block text-xs text-muted">{hint}</span>}
+      </span>
+      <input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={invert ? !cfg[k] : !!cfg[k]} onChange={(e) => set(k, invert ? !e.target.checked : e.target.checked)} />
+    </label>
+  );
+
   return (
-    <Card className="space-y-3">
-      <label className="flex items-start gap-3">
-        <input
-          type="checkbox"
-          className="mt-1 size-5 accent-[var(--color-accent)]"
-          checked={unlockAll}
-          onChange={(e) => update((s) => { s.settings.unlockAll = e.target.checked; })}
-        />
-        <span>
-          <span className="font-medium">Бүх хичээлийг нээх</span>
-          <span className="block text-sm text-muted">
-            Эхлэгчийн замын түгжээг (20/40/60 үг) тойрч бүх дасгалыг шууд нээнэ. Зөвхөн таны аккаунтад нөлөөлнө, явц өөрчлөгдөхгүй.
-          </span>
-        </span>
-      </label>
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        {[["#/stories", "📖 Уншлага"], ["#/speaking", "🎤 Ярих"], ["#/dictation", "✍️ Диктант"], ["#/sentences", "🧩 Өгүүлбэр"], ["#/easy-listening", "🎧 Энгийн сонсгол"], ["#/mock", "📝 Шалгалт"]].map(([h, l]) => (
-          <a key={h} href={h} className="rounded-xl border border-line bg-surface p-3 text-center hover:bg-line/40">{l}</a>
-        ))}
-      </div>
-    </Card>
+    <div className="space-y-3">
+      <Card className="space-y-3">
+        <p className="font-semibold">📈 Сурах хэмнэл</p>
+        {num("dailyGoal", "Өдрийн XP зорилго", "Нүүр хуудасны ⚡ зорилго", 10, 500)}
+        {num("newWordsPerDay", "Өдөрт шинэ үг", "Эхлэгчийн өдөр бүр үзэх шинэ үгийн тоо", 1, 50)}
+        {num("listeningAt", "Энгийн сонсгол нээгдэх", "Хэдэн үг сурсны дараа", 0, 80)}
+        {num("sentenceAt", "Өгүүлбэр зохиох нээгдэх", "Хэдэн үг сурсны дараа", 0, 80)}
+      </Card>
+
+      <Card className="space-y-3">
+        <p className="font-semibold">🧩 Хэсгүүд</p>
+        {sw("stories", "📖 Богино уншлага", "Үг дээр дарж утга, орчуулгатай")}
+        {sw("speaking", "🎤 Ярих", "Микрофоноор дуудлага шалгах")}
+        {sw("dictation", "✍️ Сонсоод бичих", "Диктант")}
+      </Card>
+
+      <Card className="space-y-3">
+        <p className="font-semibold">📢 Бүх хэрэглэгчид</p>
+        <label className="block space-y-1">
+          <span className="text-sm">Мэдэгдэл (нүүр хуудасны дээр харагдана, хоосон бол нуугдана)</span>
+          <textarea value={cfg.announcement} onChange={(e) => set("announcement", e.target.value)} rows={2} maxLength={300} className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm" />
+        </label>
+        {sw("registrationClosed", "Шинэ бүртгэл нээлттэй", "Унтраавал шинэ хүн бүртгүүлж чадахгүй", true)}
+      </Card>
+
+      <Button className="w-full" disabled={saving} onClick={save}>{saving ? "Хадгалж байна…" : "Бүгдийг хадгалах"}</Button>
+      {msg && <p className={cx("text-sm", msg.ok ? "text-good" : "text-bad")}>{msg.text}</p>}
+
+      <Card className="space-y-2">
+        <p className="font-semibold">🛡️ Миний аккаунт</p>
+        {(() => (
+          <label className="flex items-center justify-between gap-3">
+            <span className="text-sm">
+              Бүх хичээлийг нээх
+              <span className="block text-xs text-muted">Зөвхөн танд — түгжээг тойрно</span>
+            </span>
+            <input type="checkbox" className="size-5 accent-[var(--color-accent)]" checked={unlockAll} onChange={(e) => update((s) => { s.settings.unlockAll = e.target.checked; })} />
+          </label>
+        ))()}
+      </Card>
+    </div>
   );
 }

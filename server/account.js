@@ -189,6 +189,10 @@ export async function handleAccount(body = {}, authHeader = "") {
         if (bad) return err(400, bad);
         const name = normalizeName(body.name);
         const key = keyOf(name);
+        if (!isAdmin(key)) {
+          const c = JSON.parse((await cmd("GET", `content:${APP}`)) ?? "{}");
+          if (c.config?.registrationClosed) return err(403, "Шинэ бүртгэл түр хаалттай байна. Админтай холбогдоно уу.", { code: "closed" });
+        }
         if (isAdmin(key)) {
           // Админ нэрийг өөр хүн бүртгүүлж чадахгүй — зөвхөн ADMIN_PIN-ээр нэвтэрнэ.
           if (!adminPin() || String(body.pin) !== adminPin()) return err(403, "Энэ нэрийг бүртгүүлэх боломжгүй.", { code: "reserved" });
@@ -253,7 +257,12 @@ export async function handleAccount(body = {}, authHeader = "") {
 
         if (body.action === "content_save") {
           const c = body.content ?? {};
-          const clean = { stories: Array.isArray(c.stories) ? c.stories : [], sentences: Array.isArray(c.sentences) ? c.sentences : [], updatedAt: Date.now() };
+          const clean = {
+            stories: Array.isArray(c.stories) ? c.stories : [],
+            sentences: Array.isArray(c.sentences) ? c.sentences : [],
+            config: c.config && typeof c.config === "object" ? c.config : {},
+            updatedAt: Date.now(),
+          };
           const raw = JSON.stringify(clean);
           if (raw.length > MAX_DATA) return err(413, "Агуулга хэт том байна.");
           await cmd("SET", `content:${APP}`, raw);

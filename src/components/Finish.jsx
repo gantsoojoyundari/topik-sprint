@@ -1,11 +1,13 @@
 import { useEffect } from "react";
-import { useStore, DAILY_GOAL } from "../lib/store.js";
+import { useStore } from "../lib/store.js";
+import { useConfig } from "../lib/content.js";
 import { today } from "../lib/dates.js";
 import { sfxDone } from "../lib/sfx.js";
 import { Card, Button, Bow, Bar } from "./ui.jsx";
 
 /** Duolingo шиг дуусгах дэлгэц: оноо, +XP, өдрийн зорилго, streak. */
 export function Finish({ score, total, note = "зөв", xp, onAgain }) {
+  const DAILY_GOAL = useConfig().dailyGoal || 30;
   const todayXp = useStore((s) => s.log?.[today()]?.xp ?? 0);
   useEffect(() => sfxDone(), []);
   const pct = total ? score / total : 1;

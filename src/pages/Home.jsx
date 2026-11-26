@@ -1,4 +1,4 @@
-import { useStore, markTask, dayLog, streak, DAILY_GOAL } from "../lib/store.js";
+import { useStore, markTask, dayLog, streak } from "../lib/store.js";
 import { today, formatMn } from "../lib/dates.js";
 import { dayInfo, tasksForDay, newWordsPerDay } from "../lib/plan.js";
 import { buildQueue, pickOldMix } from "../lib/srs.js";
@@ -7,6 +7,7 @@ import vocab from "../data/vocab.json";
 import { Page, Card, Bar, Pill, TONE, Bow, cx } from "../components/ui.jsx";
 import { BeginnerPath } from "../components/BeginnerPath.jsx";
 import { useSession } from "../lib/account.js";
+import { getConfig, useConfig } from "../lib/content.js";
 
 export function useToday() {
   const state = useStore();
@@ -15,7 +16,8 @@ export function useToday() {
   const weakness = state.diagnostic?.scores ?? {};
   const info = dayInfo(profile, date);
   // Эхлэгч: TOPIK II-ийн даалгаврын оронд үсэг → үг → сонсгол → өгүүлбэр дараалал.
-  const beginner = beginnerState(state);
+  const config = getConfig();
+  const beginner = beginnerState(state, config);
   const log = dayLog(state, date);
   const tasks = [
     ...(beginner.graduated ? tasksForDay(profile, weakness, date) : beginnerTasks(beginner, date)),
@@ -25,7 +27,7 @@ export function useToday() {
   // Эхлэгч байх үед зөвхөн анхан шатны үгс, өдөрт 10 шинэ үг.
   const pool = beginner.graduated ? vocab.words : vocab.words.filter((w) => w.topic === "basic" || state.srs[w.id]);
   const remainingNew = pool.filter((w) => !state.srs[w.id]).length;
-  const perDay = beginner.graduated ? newWordsPerDay(profile, remainingNew, date) : 10;
+  const perDay = beginner.graduated ? newWordsPerDay(profile, remainingNew, date) : config.newWordsPerDay;
   const newLimit = Math.max(0, perDay - log.newWords);
   const base = buildQueue(pool, state.srs, { newLimit, now: date });
   // Хугацаа нь болоогүй хуучин үгсээс өдөрт 4-ийг нэмж давтана.
@@ -37,6 +39,8 @@ export function useToday() {
 export default function Home() {
   const { state, date, info, tasks, log, queue, beginner } = useToday();
   const session = useSession();
+  const cfg = useConfig();
+  const goal = cfg.dailyGoal || 30;
   const s = streak(state.log, date);
   const vocabLeft = queue.due.length + queue.fresh.length;
   const openMistakes = state.mistakes.filter((m) => !m.resolved).length;
@@ -69,6 +73,13 @@ export default function Home() {
         </a>
       </header>
 
+      {cfg.announcement && (
+        <div className="mb-3 rounded-2xl border-2 border-accent bg-listening-soft p-3 text-sm">
+          <span className="font-semibold">📢 Мэдэгдэл: </span>
+          {cfg.announcement}
+        </div>
+      )}
+
       {/* Duolingo шиг өдрийн XP зорилго */}
       <Card className="mb-3 flex items-center gap-3">
         <span className="text-3xl">⚡</span>
@@ -76,10 +87,10 @@ export default function Home() {
           <div className="flex justify-between text-sm">
             <span className="font-semibold">Өдрийн зорилго</span>
             <span className="tabular-nums text-muted">
-              {Math.min(log.xp ?? 0, DAILY_GOAL)}/{DAILY_GOAL} XP {(log.xp ?? 0) >= DAILY_GOAL && "✓"}
+              {Math.min(log.xp ?? 0, goal)}/{goal} XP {(log.xp ?? 0) >= goal && "✓"}
             </span>
           </div>
-          <Bar className="mt-1.5" value={((log.xp ?? 0) / DAILY_GOAL) * 100} tone="reading" />
+          <Bar className="mt-1.5" value={((log.xp ?? 0) / goal) * 100} tone="reading" />
           <p className="mt-1 text-xs text-muted">Нийт {state.xp ?? 0} XP · зөв хариулт бүр +2, дасгал дуусгавал +5</p>
         </div>
       </Card>
@@ -90,7 +101,9 @@ export default function Home() {
           ["#/stories", "📖", "Уншлага", "үг дээр дарж утга"],
           ["#/speaking", "🎤", "Ярих", "давтаж хэл"],
           ["#/dictation", "✍️", "Бичих", "сонсоод бич"],
-        ].map(([href, icon, label, note]) => (
+        ]
+          .filter(([href]) => cfg[href.slice(2)] !== false)
+          .map(([href, icon, label, note]) => (
           <a key={href} href={href} className="rounded-2xl border border-line bg-surface p-3 text-center hover:bg-line/40">
             <div className="text-2xl">{icon}</div>
             <div className="mt-1 text-sm font-semibold">{label}</div>

@@ -1,5 +1,6 @@
 import { useStore } from "../lib/store.js";
 import { beginnerState } from "../lib/beginner.js";
+import { useConfig } from "../lib/content.js";
 import { BeginnerPath } from "../components/BeginnerPath.jsx";
 import listening from "../data/listening.json";
 import reading from "../data/reading.json";
@@ -9,7 +10,7 @@ import { Page, Card, TONE, cx } from "../components/ui.jsx";
 
 export default function Practice() {
   const mistakes = useStore((s) => s.mistakes).filter((m) => !m.resolved).length;
-  const b = beginnerState(useStore());
+  const b = beginnerState(useStore(), useConfig());
   const rows = [
     { href: "#/listening", ko: "듣기", mn: "Сонсгол", note: `${listening.items.length} асуулт · хурд 0.8–1.2x`, tone: "listening" },
     { href: "#/reading", ko: "읽기", mn: "Унших", note: `${reading.items.length} асуулт · төрлөөр, хугацаатай`, tone: "reading" },

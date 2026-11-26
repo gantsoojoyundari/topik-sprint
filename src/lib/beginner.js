@@ -18,15 +18,18 @@ export const STEPS = [
   { id: "sentence", n: 7, need: 60, title: "Өгүүлбэр зохиох", route: "#/sentences", section: "writing", minutes: 10, detail: "Үгсийг зөв дараалалд тавь" },
 ];
 
-export function beginnerState({ hangul: hs = {}, srs = {}, settings = {} }) {
+export function beginnerState({ hangul: hs = {}, srs = {}, settings = {} }, config = {}) {
   const lettersAll = hangul.letters.filter((l) => (hs[l.id] ?? 0) >= LEARNED).length;
   const lettersBasic = BASIC_LETTERS.filter((l) => (hs[l.id] ?? 0) >= LEARNED).length;
   const words = BASIC_WORDS.filter((w) => srs[w.id]).length;
   const unlocked = { hangul: true, vocab: lettersBasic >= BASIC_LETTERS.length };
   // always: дасгал үргэлж нээлттэй (үг дээр дарвал утга гардаг тул эхлэгчид ч болно); need нь өдрийн даалгаварт.
-  for (const s of STEPS) if (s.need) unlocked[s.id] = !!s.always || words >= s.need;
+  const need = (s) => (s.id === "listening" ? config.listeningAt ?? s.need : s.id === "sentence" ? config.sentenceAt ?? s.need : s.need);
+  for (const s of STEPS) if (s.need) unlocked[s.id] = (!!s.always && config[s.id] !== false) || words >= need(s);
+  // Админ унтраасан хэсэг
+  for (const id of ["stories", "speaking", "dictation"]) if (config[id] === false) unlocked[id] = false;
   // Админы «Бүгдийг нээх»: түгжээг тойрно (явц өөрчлөгдөхгүй).
-  if (settings.unlockAll) for (const s of STEPS) unlocked[s.id] = true;
+  if (settings.unlockAll) for (const s of STEPS) if (config[s.id] !== false) unlocked[s.id] = true;
   const unlockedAll = !!settings.unlockAll;
   const lettersDone = lettersAll === hangul.letters.length;
   return {
