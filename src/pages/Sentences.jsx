@@ -3,6 +3,8 @@ import { useSentences } from "../lib/content.js";
 import { useStore, update, markTask, recordAttempt } from "../lib/store.js";
 import { today } from "../lib/dates.js";
 import { playClips } from "../lib/sound.js";
+import { Finish } from "../components/Finish.jsx";
+import { sfxCorrect, sfxWrong } from "../lib/sfx.js";
 import { Page, Card, Button, Bar, Bow, Ko, useAutoNext, cx } from "../components/ui.jsx";
 
 // Өгүүлбэр зохиох: монгол утгыг хараад солонгос үгсийг зөв дараалалд тавина.
@@ -27,19 +29,12 @@ function SentencesRound({ onAgain }) {
   const [i, setI] = useState(0);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [xp, setXp] = useState(0);
 
   if (finished) {
     return (
       <Page title="Өгүүлбэр зохиох" back="#/practice">
-        <Card className="py-8 text-center">
-          <Bow className="mx-auto w-16" />
-          <p className="mt-3 text-4xl font-bold tabular-nums">{score}/{set.length}</p>
-          <p className="mt-1 text-sm text-muted">анхны оролдлогоор зөв</p>
-          <div className="mt-6 flex justify-center gap-2">
-            <Button variant="outline" onClick={() => (location.hash = "#/")}>Дуусгах</Button>
-            <Button onClick={onAgain}>Дахиад хийх ↻</Button>
-          </div>
-        </Card>
+        <Finish score={score} total={set.length} note="анхны оролдлогоор зөв" xp={xp} onAgain={onAgain} />
       </Page>
     );
   }
@@ -57,7 +52,7 @@ function SentencesRound({ onAgain }) {
           if (firstTry) update((s) => { (s.sentences ??= {})[set[i].id] = (s.sentences[set[i].id] ?? 0) + 1; });
           if (i + 1 < set.length) setI(i + 1);
           else {
-            recordAttempt("writing", nextScore, set.length, "sentence");
+            setXp(recordAttempt("writing", nextScore, set.length, "sentence"));
             markTask(`${today()}:sentence`);
             setFinished(true);
           }
@@ -88,6 +83,7 @@ function Builder({ item, onDone }) {
   function check() {
     const ok = built === target;
     setResult(ok ? "ok" : "bad");
+    (ok ? sfxCorrect : sfxWrong)();
     setTries((t) => t + 1);
     if (ok) say();
   }

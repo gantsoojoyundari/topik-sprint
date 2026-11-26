@@ -3,7 +3,7 @@ import { useStore, update, resetAll, getState } from "../lib/store.js";
 import { setTheme } from "../lib/theme.js";
 import { today, addDays } from "../lib/dates.js";
 import { Page, Card, Button, cx } from "../components/ui.jsx";
-import { logout, deleteAccount, useSession, useSyncStatus } from "../lib/account.js";
+import { logout, deleteAccount, changePin, useSession, useSyncStatus } from "../lib/account.js";
 
 const SYNC_LABEL = { idle: "Сервер дээр хадгалагдсан", saved: "Сервер дээр хадгалагдсан", saving: "Хадгалж байна…", offline: "Интернэтгүй — холбогдмогц хадгална", local: "Одоогоор энэ төхөөрөмж дээр хадгалагдаж байна" };
 
@@ -74,6 +74,8 @@ export default function Settings() {
           </div>
           <Button variant="outline" onClick={logout}>Гарах</Button>
         </Card>
+
+        <ChangePinCard admin={!!session?.admin} />
 
         <Card className="space-y-2">
           <p className="text-sm font-medium">Харагдац</p>
@@ -159,5 +161,58 @@ export default function Settings() {
         </Card>
       </div>
     </Page>
+  );
+}
+
+/** Өөрийн кодыг солих: одоогийн код → шинэ код (2 удаа). */
+function ChangePinCard({ admin }) {
+  const [open, setOpen] = useState(false);
+  const [oldPin, setOldPin] = useState("");
+  const [pin, setPin] = useState("");
+  const [pin2, setPin2] = useState("");
+  const [msg, setMsg] = useState(null); // { ok, text }
+  const [busy, setBusy] = useState(false);
+  const only = (v) => v.replace(/\D/g, "").slice(0, 6);
+  const field = "w-full rounded-xl border border-line bg-surface p-3 tracking-[0.3em]";
+
+  async function save() {
+    setMsg(null);
+    if (pin.length < 4) return setMsg({ ok: false, text: "Шинэ код 4–6 оронтой тоо байна." });
+    if (pin !== pin2) return setMsg({ ok: false, text: "Шинэ код хоёр удаа ижил биш байна." });
+    setBusy(true);
+    try {
+      await changePin(oldPin, pin);
+      setMsg({ ok: true, text: "Код солигдлоо ✓ Дараагийн нэвтрэлтэд шинэ кодоо ашиглана." });
+      setOldPin("");
+      setPin("");
+      setPin2("");
+      setOpen(false);
+    } catch (e) {
+      setMsg({ ok: false, text: e.message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="space-y-2">
+      <p className="text-sm font-medium">🔑 Код солих</p>
+      {admin ? (
+        <p className="text-xs text-muted">Админы код Vercel → Settings → Environment Variables → ADMIN_PIN-д байдаг тул тэндээс солино.</p>
+      ) : open ? (
+        <div className="space-y-2">
+          <input type="password" inputMode="numeric" value={oldPin} onChange={(e) => setOldPin(only(e.target.value))} placeholder="Одоогийн код" className={field} />
+          <input type="password" inputMode="numeric" value={pin} onChange={(e) => setPin(only(e.target.value))} placeholder="Шинэ код (4–6 орон)" className={field} />
+          <input type="password" inputMode="numeric" value={pin2} onChange={(e) => setPin2(only(e.target.value))} placeholder="Шинэ кодоо давтах" className={field} />
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={() => { setOpen(false); setMsg(null); }}>Болих</Button>
+            <Button disabled={busy || oldPin.length < 4} onClick={save}>{busy ? "Хадгалж байна…" : "Хадгалах"}</Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>Кодоо солих</Button>
+      )}
+      {msg && <p className={cx("text-sm", msg.ok ? "text-good" : "text-bad")}>{msg.text}</p>}
+    </Card>
   );
 }

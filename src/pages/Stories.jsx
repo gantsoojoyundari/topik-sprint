@@ -4,6 +4,7 @@ import { useStore, update, markTask, recordAttempt } from "../lib/store.js";
 import { today } from "../lib/dates.js";
 import { playClips } from "../lib/sound.js";
 import { TapSentence } from "../components/WordTap.jsx";
+import { sfxDone } from "../lib/sfx.js";
 import { Page, Card, Button, Bar, Bow, cx } from "../components/ui.jsx";
 
 // Богино уншлага: аппын үгсээр бичсэн жижиг өгүүллэг.
@@ -62,6 +63,7 @@ function Reader({ story, onExit }) {
   const [shown, setShown] = useState(false); // орчуулга харагдаж байгаа эсэх
   const [finished, setFinished] = useState(false);
   const [slow, setSlow] = useState(false);
+  const [xp, setXp] = useState(0);
   const bottom = useRef(null);
   const total = story.sentences.length;
   const sentence = story.sentences[i];
@@ -88,7 +90,8 @@ function Reader({ story, onExit }) {
       update((s) => {
         (s.stories ??= {})[story.id] = (s.stories[story.id] ?? 0) + 1;
       });
-      recordAttempt("reading", total, total, "story");
+      setXp(recordAttempt("reading", total, total, "story"));
+      sfxDone();
       markTask(`${today()}:stories`);
       setFinished(true);
     }
@@ -138,6 +141,7 @@ function Reader({ story, onExit }) {
           <Card className="py-6 text-center">
             <Bow className="mx-auto w-14" />
             <p className="mt-2 text-xl font-bold">Уншиж дууслаа! 🎀</p>
+            <p className="mt-1 inline-block rounded-full bg-reading-soft px-3 py-1 text-sm font-bold text-reading">+{xp} XP</p>
             <p className="mt-1 text-sm text-muted">Одоо бүтнээр нь сонсоод, хамт чанга уншаарай.</p>
             <Button
               variant="outline"

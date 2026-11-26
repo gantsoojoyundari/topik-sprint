@@ -252,6 +252,28 @@ export function restore() {
     });
 }
 
+/** Өөрийн кодыг солих: сервер дээр, мөн энэ төхөөрөмж дээрх нөөц аккаунтад. */
+export async function changePin(oldPin, newPin) {
+  if (!session) return;
+  const key = userKey(session.name);
+  const accounts = readJson(LOCAL_ACCOUNTS) ?? {};
+  const local = accounts[key];
+  if (session.token !== "local") {
+    try {
+      await call("change_pin", { oldPin, pin: newPin });
+    } catch (e) {
+      // Сервер дээр сан холбогдоогүй бол төхөөрөмжийн аккаунтыг л солино.
+      if (e.code !== "no_storage" || !local) throw e;
+    }
+  }
+  if (local) {
+    if (session.token === "local" && !(await localAccount(session.name, oldPin))) throw new Error("Одоогийн код буруу байна.");
+    const salt = crypto.randomUUID();
+    accounts[key] = { ...local, salt, hash: await pinHash(newPin, salt) };
+    writeJson(LOCAL_ACCOUNTS, accounts);
+  }
+}
+
 /** Админ үйлдэл (сервер талд ADMIN_NAMES-ээр шалгагдана). */
 export const adminCall = (action, payload) => call(action, payload);
 

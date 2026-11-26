@@ -152,10 +152,22 @@ export function markTask(taskId, done = true, date = today()) {
   });
 }
 
+/** Duolingo шиг XP: зөв хариулт бүрт 2, дасгал дуусгасанд 5. Онбордингийн оношлогоо XP өгөхгүй. */
+export const xpFor = (correct, total, source) => (source === "diagnostic" || !total ? 0 : correct * 2 + 5);
+export const DAILY_GOAL = 30;
+
 export function recordAttempt(section, correct, total, source) {
+  const xp = xpFor(correct, total, source);
   update((s) => {
     s.attempts.push({ section, correct, total, source, at: Date.now() });
+    if (xp) {
+      s.xp = (s.xp ?? 0) + xp;
+      const d = dayLog(s);
+      d.xp = (d.xp ?? 0) + xp;
+      s.log[today()] = d;
+    }
   });
+  return xp;
 }
 
 export function recordMistake(kind, qid, chosen) {

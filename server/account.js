@@ -318,6 +318,22 @@ export async function handleAccount(body = {}, authHeader = "") {
         return ok({ deleted: true });
       }
 
+      case "change_pin": {
+        const key = await userFromToken(token);
+        if (!key) return err(401, "Нэвтрэх хугацаа дууссан.");
+        if (isAdmin(key)) return err(400, "Админы кодыг Vercel-ийн ADMIN_PIN тохиргооноос солино.", { code: "admin_pin" });
+        if (!PIN_RE.test(String(body.pin ?? ""))) return err(400, "Шинэ код 4–6 оронтой тоо байна.");
+        const raw = await cmd("GET", `user:${key}`);
+        const user = raw ? JSON.parse(raw) : null;
+        if (!user) return err(404, "Хэрэглэгч олдсонгүй.");
+        const match = timingSafeEqual(Buffer.from(hashPin(body.oldPin ?? "", user.salt), "hex"), Buffer.from(user.hash, "hex"));
+        if (!match) return err(401, "Одоогийн код буруу байна.", { code: "bad_pin" });
+        user.salt = randomBytes(16).toString("hex");
+        user.hash = hashPin(body.pin, user.salt);
+        await cmd("SET", `user:${key}`, JSON.stringify(user));
+        return ok({ ok: true });
+      }
+
       case "logout": {
         if (token) await cmd("DEL", `sess:${token}`);
         return ok({ ok: true });

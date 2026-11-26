@@ -1,4 +1,4 @@
-import { useStore, markTask, dayLog, streak } from "../lib/store.js";
+import { useStore, markTask, dayLog, streak, DAILY_GOAL } from "../lib/store.js";
 import { today, formatMn } from "../lib/dates.js";
 import { dayInfo, tasksForDay, newWordsPerDay } from "../lib/plan.js";
 import { buildQueue, pickOldMix } from "../lib/srs.js";
@@ -68,6 +68,21 @@ export default function Home() {
           </svg>
         </a>
       </header>
+
+      {/* Duolingo шиг өдрийн XP зорилго */}
+      <Card className="mb-3 flex items-center gap-3">
+        <span className="text-3xl">⚡</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex justify-between text-sm">
+            <span className="font-semibold">Өдрийн зорилго</span>
+            <span className="tabular-nums text-muted">
+              {Math.min(log.xp ?? 0, DAILY_GOAL)}/{DAILY_GOAL} XP {(log.xp ?? 0) >= DAILY_GOAL && "✓"}
+            </span>
+          </div>
+          <Bar className="mt-1.5" value={((log.xp ?? 0) / DAILY_GOAL) * 100} tone="reading" />
+          <p className="mt-1 text-xs text-muted">Нийт {state.xp ?? 0} XP · зөв хариулт бүр +2, дасгал дуусгавал +5</p>
+        </div>
+      </Card>
 
       {/* Шууд орох: уншлага (үг дээр дарвал утга), ярих, сонсоод бичих */}
       <div className="mb-4 grid grid-cols-3 gap-2">

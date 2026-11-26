@@ -67,3 +67,13 @@ test("админ: хадгалах сангүй (Vercel) үед ч admin/ADMIN_P
     process.env = saved;
   }
 });
+
+test("код солих: одоогийн кодыг шалгаад шинэ кодоор нэвтэрнэ", async () => {
+  process.env.ADMIN_NAMES = "admin";
+  const call = (body, token) => handleAccount(body, token ? `Bearer ${token}` : "");
+  const u = (await call({ action: "register", name: "Тэмүүлэн", pin: "4321" })).json;
+  assert.equal((await call({ action: "change_pin", oldPin: "0000", pin: "123456" }, u.token)).json.code, "bad_pin");
+  assert.equal((await call({ action: "change_pin", oldPin: "4321", pin: "123456" }, u.token)).status, 200);
+  assert.equal((await call({ action: "login", name: "Тэмүүлэн", pin: "4321" })).status, 401);
+  assert.equal((await call({ action: "login", name: "тэмүүлэн", pin: "123456" })).status, 200);
+});

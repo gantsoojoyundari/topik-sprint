@@ -6,6 +6,8 @@ import { galig } from "../lib/galig.js";
 import { useSentences, useStories } from "../lib/content.js";
 import { ALL_ITEMS, buildItems, pickItems, norm, jamo } from "../lib/items.js";
 import { TapSentence } from "../components/WordTap.jsx";
+import { Finish } from "../components/Finish.jsx";
+import { sfxCorrect, sfxWrong } from "../lib/sfx.js";
 import { Page, Card, Button, Bar, Bow, Ko, useAutoNext, cx } from "../components/ui.jsx";
 
 // Сонсоод бичих (диктант): Duolingo-гийн «Type what you hear».
@@ -33,19 +35,12 @@ function Round({ kind, setKind, mode, setMode, onAgain }) {
   const [i, setI] = useState(0);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [xp, setXp] = useState(0);
 
   if (finished) {
     return (
       <Page title="Сонсоод бичих" back="#/practice">
-        <Card className="py-8 text-center">
-          <Bow className="mx-auto w-16" />
-          <p className="mt-3 text-4xl font-bold tabular-nums">{score}/{set.length}</p>
-          <p className="mt-1 text-sm text-muted">анхны оролдлогоор зөв</p>
-          <div className="mt-6 flex justify-center gap-2">
-            <Button variant="outline" onClick={() => (location.hash = "#/")}>Дуусгах</Button>
-            <Button onClick={onAgain}>Дахиад ↻</Button>
-          </div>
-        </Card>
+        <Finish score={score} total={set.length} note="анхны оролдлогоор зөв" xp={xp} onAgain={onAgain} />
       </Page>
     );
   }
@@ -77,7 +72,7 @@ function Round({ kind, setKind, mode, setMode, onAgain }) {
           if (firstTry) update((s) => { (s.dictation ??= {})[set[i].id] = (s.dictation[set[i].id] ?? 0) + 1; });
           if (i + 1 < set.length) setI(i + 1);
           else {
-            recordAttempt("writing", next, set.length, "dictation");
+            setXp(recordAttempt("writing", next, set.length, "dictation"));
             markTask(`${today()}:dictation`);
             setFinished(true);
           }
@@ -136,6 +131,7 @@ function DictItem({ item, mode, onDone }) {
     if (!norm(answer)) return;
     const ok = norm(answer) === norm(item.ko);
     setResult(ok ? "ok" : "bad");
+    (ok ? sfxCorrect : sfxWrong)();
     setTries((t) => t + 1);
     if (ok) say();
   }

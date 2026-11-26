@@ -6,6 +6,8 @@ import { useSentences, useStories } from "../lib/content.js";
 import { buildItems, pickItems, similarity, tokenHits } from "../lib/items.js";
 import { canRecognize, canRecord, useRecognizer, useRecorder } from "../lib/voice.js";
 import { TapSentence } from "../components/WordTap.jsx";
+import { Finish } from "../components/Finish.jsx";
+import { sfxCorrect, sfxWrong } from "../lib/sfx.js";
 import { Page, Card, Button, Bar, Bow, useAutoNext, cx } from "../components/ui.jsx";
 
 // Ярих: Duolingo-гийн «Speak this» шиг — сонсоно → микрофонд хэлнэ → үг бүрийг ногоон/улаанаар үнэлнэ.
@@ -27,19 +29,12 @@ function Round({ kind, setKind, onAgain }) {
   const [i, setI] = useState(0);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [xp, setXp] = useState(0);
 
   if (finished) {
     return (
       <Page title="Ярих" back="#/practice">
-        <Card className="py-8 text-center">
-          <Bow className="mx-auto w-16" />
-          <p className="mt-3 text-4xl font-bold tabular-nums">{score}/{set.length}</p>
-          <p className="mt-1 text-sm text-muted">зөв дуудсан</p>
-          <div className="mt-6 flex justify-center gap-2">
-            <Button variant="outline" onClick={() => (location.hash = "#/")}>Дуусгах</Button>
-            <Button onClick={onAgain}>Дахиад ↻</Button>
-          </div>
-        </Card>
+        <Finish score={score} total={set.length} note="зөв дуудсан" xp={xp} onAgain={onAgain} />
       </Page>
     );
   }
@@ -66,7 +61,7 @@ function Round({ kind, setKind, onAgain }) {
           if (ok) update((s) => { (s.speaking ??= {})[set[i].id] = (s.speaking[set[i].id] ?? 0) + 1; });
           if (i + 1 < set.length) setI(i + 1);
           else {
-            recordAttempt("listening", next, set.length, "speaking");
+            setXp(recordAttempt("listening", next, set.length, "speaking"));
             markTask(`${today()}:speaking`);
             setFinished(true);
           }
@@ -90,6 +85,7 @@ function SpeakItem({ item, onDone }) {
     const hits = tokenHits(item.t, best.said);
     const ok = best.sim >= PASS || hits.every(Boolean);
     setResult({ ...best, hits, ok });
+    (ok ? sfxCorrect : sfxWrong)();
     setTries((t) => t + 1);
   });
 
