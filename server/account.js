@@ -1,4 +1,4 @@
-// Нэр + 4 оронтой кодоор нэвтрэх аккаунт. Имэйл шаардлагагүй.
+// Нэр + 4–6 оронтой кодоор нэвтрэх аккаунт. Имэйл шаардлагагүй.
 // Production-д Upstash Redis (Vercel Storage) REST API ашиглана; dev-д санах ойд хадгална.
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
@@ -76,10 +76,12 @@ function hashPin(pin, salt) {
   return scryptSync(String(pin), salt, 32).toString("hex");
 }
 
+const PIN_RE = /^\d{4,6}$/;
+
 function validate(name, pin) {
   const n = normalizeName(name);
   if (n.length < 2 || n.length > 24) return "Хэрэглэгчийн нэр 2–24 тэмдэгт байна.";
-  if (!/^\d{4}$/.test(String(pin ?? ""))) return "Код 4 оронтой тоо байна.";
+  if (!PIN_RE.test(String(pin ?? ""))) return "Код 4–6 оронтой тоо байна.";
   return null;
 }
 
@@ -105,6 +107,7 @@ const adminKeys = () =>
     .split(",")
     .map((s) => keyOf(s))
     .filter(Boolean);
+const adminPin = () => String(process.env.ADMIN_PIN ?? "").trim();
 export const isAdmin = (key) => !!key && adminKeys().includes(key);
 
 async function allUserKeys() {
@@ -160,6 +163,11 @@ export async function handleAccount(body = {}, authHeader = "") {
         if (bad) return err(400, bad);
         const name = normalizeName(body.name);
         const key = keyOf(name);
+        if (isAdmin(key)) {
+          // Админ нэрийг өөр хүн бүртгүүлж чадахгүй — зөвхөн ADMIN_PIN-ээр нэвтэрнэ.
+          if (!adminPin() || String(body.pin) !== adminPin()) return err(403, "Энэ нэрийг бүртгүүлэх боломжгүй.", { code: "reserved" });
+          return handleAccount({ ...body, action: "login" }, authHeader);
+        }
         const salt = randomBytes(16).toString("hex");
         const user = { name, salt, hash: hashPin(body.pin, salt), createdAt: Date.now() };
         const created = await cmd("SET", `user:${key}`, JSON.stringify(user), "NX");
@@ -176,6 +184,14 @@ export async function handleAccount(body = {}, authHeader = "") {
         const fails = Number((await cmd("GET", `fail:${key}`)) ?? 0);
         if (fails >= MAX_FAILS) return err(429, "Хэт олон удаа буруу код орууллаа. 15 минутын дараа дахин оролдоно уу.");
         const raw = await cmd("GET", `user:${key}`);
+        // Админ: ADMIN_PIN-ээр нэвтэрвэл (аккаунт байхгүй бол үүсгээд) шууд оруулна.
+        if (isAdmin(key) && adminPin() && String(body.pin) === adminPin()) {
+          const prev = { ...(raw ? JSON.parse(raw) : { createdAt: Date.now() }), name: key };
+          const salt = randomBytes(16).toString("hex");
+          await cmd("SET", `user:${key}`, JSON.stringify({ ...prev, salt, hash: hashPin(body.pin, salt) }));
+          await cmd("DEL", `fail:${key}`);
+          return ok({ token: await newSession(key), name: prev.name, data: await readData(key), admin: true });
+        }
         const user = raw ? JSON.parse(raw) : null;
         if (!user) return err(404, "Ийм нэртэй хэрэглэгч алга. «Бүртгүүлэх»-ээр шинээр үүсгэнэ үү.", { code: "no_user" });
         const match = timingSafeEqual(Buffer.from(hashPin(body.pin, user.salt), "hex"), Buffer.from(user.hash, "hex"));
@@ -235,7 +251,7 @@ export async function handleAccount(body = {}, authHeader = "") {
         const user = JSON.parse(raw);
 
         if (body.action === "admin_set_pin") {
-          if (!/^\d{4}$/.test(String(body.pin ?? ""))) return err(400, "Код 4 оронтой тоо байна.");
+          if (!PIN_RE.test(String(body.pin ?? ""))) return err(400, "Код 4–6 оронтой тоо байна.");
           user.salt = randomBytes(16).toString("hex");
           user.hash = hashPin(body.pin, user.salt);
           await cmd("SET", `user:${target}`, JSON.stringify(user));
@@ -268,7 +284,7 @@ export async function handleAccount(body = {}, authHeader = "") {
         if (!key) return err(401, "Нэвтрэх хугацаа дууссан.");
         const raw = await cmd("GET", `user:${key}`);
         const user = raw ? JSON.parse(raw) : null;
-        if (!user || !/^\d{4}$/.test(String(body.pin ?? ""))) return err(401, "Код буруу байна.");
+        if (!user || !PIN_RE.test(String(body.pin ?? ""))) return err(401, "Код буруу байна.");
         const match = timingSafeEqual(Buffer.from(hashPin(body.pin, user.salt), "hex"), Buffer.from(user.hash, "hex"));
         if (!match) return err(401, "Код буруу байна.", { code: "bad_pin" });
         // Аккаунт хоёр апп-д нийтлэг тул хоёр апп-ын явцыг хамт устгана.

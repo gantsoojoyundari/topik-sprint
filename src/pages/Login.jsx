@@ -14,13 +14,13 @@ export default function Login() {
   const [importLocal, setImportLocal] = useState(true);
 
   const isReg = mode === "register";
-  const digits = (v) => v.replace(/\D/g, "").slice(0, 4);
+  const digits = (v) => v.replace(/\D/g, "").slice(0, 6);
 
   async function submit(e) {
     e.preventDefault();
     setError("");
     if (name.trim().length < 2) return setError("Хэрэглэгчийн нэрээ оруулна уу (2+ тэмдэгт).");
-    if (pin.length !== 4) return setError("Код 4 оронтой тоо байна.");
+    if (pin.length < 4) return setError("Код 4–6 оронтой тоо байна.");
     setBusy(true);
     try {
       if (isReg) await register(name, pin, { importLocal: legacy && importLocal });
@@ -37,7 +37,7 @@ export default function Login() {
         <Bow className="mb-2 w-14" />
         <h1 className="text-2xl font-semibold tracking-tight">TOPIK II Sprint</h1>
         <Whiskers className="mt-1 w-8 text-muted" />
-        <p className="mt-2 text-sm text-muted">Хэрэглэгчийн нэр, 4 оронтой кодоороо нэвтэрнэ. TOPIK, HSK хоёр апп-д нэг л аккаунт — аль ч төхөөрөмжөөс үргэлжлүүлнэ.</p>
+        <p className="mt-2 text-sm text-muted">Хэрэглэгчийн нэр, кодоороо нэвтэрнэ. TOPIK, HSK хоёр апп-д нэг л аккаунт — аль ч төхөөрөмжөөс үргэлжлүүлнэ.</p>
       </div>
 
       <Card>
@@ -63,13 +63,13 @@ export default function Login() {
             <input className={input} value={name} onChange={(e) => setName(e.target.value)} autoComplete="username" maxLength={24} placeholder="жишээ нь Сараа" />
           </label>
           <label className="block space-y-1">
-            <span className="text-sm font-medium">Код (4 оронтой)</span>
+            <span className="text-sm font-medium">Код (4–6 оронтой)</span>
             <input
               className={cx(input, "tracking-[0.3em]")}
               type="password"
               inputMode="numeric"
               autoComplete={isReg ? "new-password" : "current-password"}
-              maxLength={4}
+              maxLength={6}
               value={pin}
               onChange={(e) => setPin(digits(e.target.value))}
               placeholder="••••"

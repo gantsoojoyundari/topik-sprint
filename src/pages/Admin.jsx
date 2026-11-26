@@ -113,7 +113,7 @@ function Users({ me }) {
               variant="outline"
               className="min-h-9 text-xs"
               onClick={() => {
-                const pin = prompt(`${u.name}-ийн шинэ 4 оронтой код:`);
+                const pin = prompt(`${u.name}-ийн шинэ 4–6 оронтой код:`);
                 if (pin) act(u.name, "admin_set_pin", { pin });
               }}
             >

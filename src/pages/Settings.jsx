@@ -141,9 +141,9 @@ export default function Settings() {
               <input
                 type="password"
                 inputMode="numeric"
-                maxLength={4}
+                maxLength={6}
                 value={delPin}
-                onChange={(e) => setDelPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                onChange={(e) => setDelPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="Кодоо оруулна уу"
                 className="w-full rounded-xl border border-line bg-surface p-3 tracking-[0.3em]"
               />
