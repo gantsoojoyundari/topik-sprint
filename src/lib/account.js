@@ -179,7 +179,10 @@ export async function login(name, pin) {
   } catch (e) {
     const acc = (e.code === "no_user" || e.code === "no_storage") && (await localAccount(name, pin));
     if (!acc) {
-      if (e.code === "no_storage") throw new Error("Ийм нэртэй хэрэглэгч алга эсвэл код буруу байна.");
+      if (e.code === "no_storage")
+        throw new Error(
+          "Сервер дээр хадгалах сан холбогдоогүй байна — аккаунт зөвхөн бүртгүүлсэн төхөөрөмж дээрээ ажиллана. Энэ төхөөрөмж дээр ийм аккаунт алга эсвэл код буруу.",
+        );
       throw e;
     }
     const data = cachedData(userKey(acc.name));
