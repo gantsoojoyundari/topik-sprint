@@ -38,3 +38,32 @@ test("админ: зөвхөн ADMIN_NAMES дахь хэрэглэгч удир�
   assert.equal((await call({ action: "admin_delete", name: "Сурагч" }, admin.token)).status, 200);
   assert.equal((await call({ action: "login", name: "Сурагч", pin: "3333" })).status, 404);
 });
+
+test("админ: хадгалах сангүй (Vercel) үед ч admin/ADMIN_PIN-ээр нэвтэрнэ", async () => {
+  const saved = { ...process.env };
+  process.env.VERCEL = "1";
+  for (const k of ["KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]) delete process.env[k];
+  process.env.ADMIN_NAMES = "admin";
+  process.env.ADMIN_PIN = "070707";
+  try {
+    const bad = await handleAccount({ action: "login", name: "admin", pin: "111111" });
+    assert.equal(bad.json.code, "no_storage");
+    const r = await handleAccount({ action: "login", name: "Admin", pin: "070707" });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.admin, true);
+    assert.equal(r.json.name, "admin");
+    // Токеноор дахин ачаалахад админ хэвээр
+    const load = await handleAccount({ action: "load" }, `Bearer ${r.json.token}`);
+    assert.equal(load.json.admin, true);
+    // Хуурамч токен ажиллахгүй
+    const fake = r.json.token.slice(0, -3) + "AAA";
+    assert.equal((await handleAccount({ action: "load" }, `Bearer ${fake}`)).json.code, "no_storage");
+    // Код өөрчлөгдвөл хуучин токен хүчингүй
+    process.env.ADMIN_PIN = "999999";
+    assert.equal((await handleAccount({ action: "load" }, `Bearer ${r.json.token}`)).json.code, "no_storage");
+    // Энгийн хэрэглэгч санг шаардана
+    assert.equal((await handleAccount({ action: "login", name: "bat", pin: "1234" })).json.code, "no_storage");
+  } finally {
+    process.env = saved;
+  }
+});

@@ -69,6 +69,21 @@ export default function Home() {
         </a>
       </header>
 
+      {/* Шууд орох: уншлага (үг дээр дарвал утга), ярих, сонсоод бичих */}
+      <div className="mb-4 grid grid-cols-3 gap-2">
+        {[
+          ["#/stories", "📖", "Уншлага", "үг дээр дарж утга"],
+          ["#/speaking", "🎤", "Ярих", "давтаж хэл"],
+          ["#/dictation", "✍️", "Бичих", "сонсоод бич"],
+        ].map(([href, icon, label, note]) => (
+          <a key={href} href={href} className="rounded-2xl border border-line bg-surface p-3 text-center hover:bg-line/40">
+            <div className="text-2xl">{icon}</div>
+            <div className="mt-1 text-sm font-semibold">{label}</div>
+            <div className="text-[11px] leading-tight text-muted">{note}</div>
+          </a>
+        ))}
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <Card className="flex flex-col justify-between">
           <span className="text-xs font-medium uppercase tracking-wide text-muted">Шалгалт хүртэл</span>

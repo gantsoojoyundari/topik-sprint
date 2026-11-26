@@ -1,6 +1,6 @@
 // Нэр + 4–6 оронтой кодоор нэвтрэх аккаунт. Имэйл шаардлагагүй.
 // Production-д Upstash Redis (Vercel Storage) REST API ашиглана; dev-д санах ойд хадгална.
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 const SESSION_TTL = 60 * 60 * 24 * 365; // 1 жил
 const MAX_FAILS = 8; // ингэтэл буруу код оруулбал 15 минут түгжинэ
@@ -93,6 +93,7 @@ async function newSession(key) {
 
 async function userFromToken(token) {
   if (!token || typeof token !== "string") return null;
+  if (token.startsWith("adm.")) return verifyAdmin(token);
   return cmd("GET", `sess:${token}`);
 }
 
@@ -151,11 +152,36 @@ const err = (status, error, extra) => ({ status, json: { error, ...extra } });
 
 // ---------- Үйлдлүүд ----------
 
+// ---------- Хадгалах сангүй үеийн админ нэвтрэлт ----------
+// Админ нэр, код нь env-д байгаа тул санд хадгалахгүйгээр шалгаж, гарын үсэгтэй токен олгоно.
+// Ингэснээр Redis холбогдоогүй ч админ ямар ч төхөөрөмжөөс нэвтэрнэ.
+const adminSecret = () => `${process.env.ADMIN_SECRET ?? ""}|${adminPin()}|${process.env.ADMIN_NAMES ?? ""}|topik-admin`;
+function signAdmin(key) {
+  const exp = Math.floor(Date.now() / 1000) + SESSION_TTL;
+  const payload = `${Buffer.from(key).toString("base64url")}.${exp}`;
+  return `adm.${payload}.${createHmac("sha256", adminSecret()).update(payload).digest("base64url")}`;
+}
+function verifyAdmin(token) {
+  const [tag, k, exp, sig] = String(token ?? "").split(".");
+  if (tag !== "adm" || !k || !exp || !sig || !adminPin()) return null;
+  const want = createHmac("sha256", adminSecret()).update(`${k}.${exp}`).digest("base64url");
+  if (want.length !== sig.length || !timingSafeEqual(Buffer.from(want), Buffer.from(sig))) return null;
+  if (Number(exp) < Date.now() / 1000) return null;
+  const key = Buffer.from(k, "base64url").toString();
+  return isAdmin(key) ? key : null;
+}
+
 export async function handleAccount(body = {}, authHeader = "") {
+  const token = authHeader.replace(/^Bearer\s+/i, "") || body.token;
   if (!redisEnv() && process.env.VERCEL) {
+    const key = keyOf(body.name);
+    const adminLogin =
+      (body.action === "login" || body.action === "register") && isAdmin(key) && adminPin() && String(body.pin) === adminPin();
+    if (adminLogin) return ok({ token: signAdmin(key), name: key, data: null, admin: true });
+    if (body.action === "load" && verifyAdmin(token)) return ok({ data: null, admin: true });
+    if (body.action === "logout") return ok({ ok: true });
     return err(503, "Сервер дээр хадгалах сан холбогдоогүй байна.", { code: "no_storage" });
   }
-  const token = authHeader.replace(/^Bearer\s+/i, "") || body.token;
   try {
     switch (body.action) {
       case "register": {
