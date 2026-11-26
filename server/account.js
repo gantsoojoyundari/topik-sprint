@@ -55,6 +55,11 @@ async function cmd(...args) {
     case "EXPIRE":
       if (live) live.exp = now + Number(val) * 1000;
       return 1;
+    case "SCAN": {
+      // SCAN 0 MATCH user:* COUNT n — dev-д нэг дор бүгдийг буцаана.
+      const prefix = String(args[3] ?? "*").replace(/\*$/, "");
+      return ["0", [...mem.keys()].filter((k) => k.startsWith(prefix))];
+    }
     default:
       throw new Error(`unsupported ${op}`);
   }
@@ -94,6 +99,50 @@ async function readData(key) {
   return raw ? JSON.parse(raw) : null;
 }
 
+// Админ: ADMIN_NAMES=нэр1,нэр2 (Vercel env / .env.local). Клиент өөрөө админ болж чадахгүй.
+const adminKeys = () =>
+  (process.env.ADMIN_NAMES ?? "")
+    .split(",")
+    .map((s) => keyOf(s))
+    .filter(Boolean);
+export const isAdmin = (key) => !!key && adminKeys().includes(key);
+
+async function allUserKeys() {
+  const keys = [];
+  let cursor = "0";
+  do {
+    const [next, batch] = await cmd("SCAN", cursor, "MATCH", "user:*", "COUNT", 500);
+    keys.push(...batch.map((k) => k.slice(5)));
+    cursor = String(next);
+  } while (cursor !== "0");
+  return [...new Set(keys)];
+}
+
+/** Хэрэглэгчийн явцын товч: админы жагсаалтад. */
+function summarize(user, data) {
+  const days = Object.keys(data?.log ?? {}).sort();
+  const attempts = data?.attempts ?? [];
+  const bySection = {};
+  for (const a of attempts) {
+    const s = (bySection[a.source || a.section] ??= { correct: 0, total: 0, n: 0 });
+    s.correct += a.correct ?? 0;
+    s.total += a.total ?? 0;
+    s.n++;
+  }
+  return {
+    name: user.name,
+    createdAt: user.createdAt,
+    updatedAt: data?.updatedAt ?? null,
+    words: Object.keys(data?.srs ?? {}).length,
+    letters: Object.values(data?.hangul ?? {}).filter((n) => n >= 2).length,
+    stories: Object.keys(data?.stories ?? {}).length,
+    activeDays: days.length,
+    lastDay: days.at(-1) ?? null,
+    bySection,
+    admin: isAdmin(keyOf(user.name)),
+  };
+}
+
 const ok = (json) => ({ status: 200, json });
 const err = (status, error, extra) => ({ status, json: { error, ...extra } });
 
@@ -117,7 +166,7 @@ export async function handleAccount(body = {}, authHeader = "") {
         if (!created) return err(409, "Энэ нэр аль хэдийн бүртгэлтэй байна. Өөр нэр сонгох эсвэл «Нэвтрэх»-ээр орно уу.", { code: "taken" });
         const data = body.data && typeof body.data === "object" ? body.data : null;
         if (data) await cmd("SET", `data:${APP}:${key}`, JSON.stringify(data));
-        return ok({ token: await newSession(key), name, data });
+        return ok({ token: await newSession(key), name, data, admin: isAdmin(key) });
       }
 
       case "login": {
@@ -136,13 +185,73 @@ export async function handleAccount(body = {}, authHeader = "") {
           return err(401, "Код буруу байна.");
         }
         await cmd("DEL", `fail:${key}`);
-        return ok({ token: await newSession(key), name: user.name, data: await readData(key) });
+        return ok({ token: await newSession(key), name: user.name, data: await readData(key), admin: isAdmin(key) });
       }
 
       case "load": {
         const key = await userFromToken(token);
         if (!key) return err(401, "Нэвтрэх хугацаа дууссан.");
-        return ok({ data: await readData(key) });
+        return ok({ data: await readData(key), admin: isAdmin(key) });
+      }
+
+      // ---------- Нэмэлт агуулга (админ нэмсэн уншлага, өгүүлбэр) — хүн бүр уншина ----------
+      case "content_get": {
+        const raw = await cmd("GET", `content:${APP}`);
+        return ok({ content: raw ? JSON.parse(raw) : { stories: [], sentences: [] } });
+      }
+
+      // ---------- Админ ----------
+      case "admin_users":
+      case "admin_set_pin":
+      case "admin_reset":
+      case "admin_delete":
+      case "content_save": {
+        const me = await userFromToken(token);
+        if (!isAdmin(me)) return err(403, "Зөвхөн админ хийнэ.");
+
+        if (body.action === "content_save") {
+          const c = body.content ?? {};
+          const clean = { stories: Array.isArray(c.stories) ? c.stories : [], sentences: Array.isArray(c.sentences) ? c.sentences : [], updatedAt: Date.now() };
+          const raw = JSON.stringify(clean);
+          if (raw.length > MAX_DATA) return err(413, "Агуулга хэт том байна.");
+          await cmd("SET", `content:${APP}`, raw);
+          return ok({ content: clean });
+        }
+
+        if (body.action === "admin_users") {
+          const users = [];
+          for (const k of await allUserKeys()) {
+            const raw = await cmd("GET", `user:${k}`);
+            if (!raw) continue;
+            users.push(summarize(JSON.parse(raw), await readData(k)));
+          }
+          users.sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+          return ok({ users });
+        }
+
+        const target = keyOf(body.name);
+        const raw = await cmd("GET", `user:${target}`);
+        if (!raw) return err(404, "Хэрэглэгч олдсонгүй.");
+        const user = JSON.parse(raw);
+
+        if (body.action === "admin_set_pin") {
+          if (!/^\d{4}$/.test(String(body.pin ?? ""))) return err(400, "Код 4 оронтой тоо байна.");
+          user.salt = randomBytes(16).toString("hex");
+          user.hash = hashPin(body.pin, user.salt);
+          await cmd("SET", `user:${target}`, JSON.stringify(user));
+          await cmd("DEL", `fail:${target}`);
+          return ok({ ok: true });
+        }
+        if (body.action === "admin_reset") {
+          await cmd("DEL", `data:${APP}:${target}`);
+          return ok({ ok: true });
+        }
+        if (body.action === "admin_delete") {
+          if (target === me) return err(400, "Өөрийгөө устгах боломжгүй.");
+          for (const k of [`user:${target}`, `data:topik:${target}`, `data:hsk:${target}`, `fail:${target}`]) await cmd("DEL", k);
+          return ok({ ok: true });
+        }
+        return err(400, "Үйлдэл тодорхойгүй.");
       }
 
       case "save": {

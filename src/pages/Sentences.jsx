@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import sentences from "../data/sentences.json";
+import { useSentences } from "../lib/content.js";
 import { useStore, update, markTask, recordAttempt } from "../lib/store.js";
 import { today } from "../lib/dates.js";
 import { playClips } from "../lib/sound.js";
@@ -16,9 +16,12 @@ export default function Sentences() {
 
 function SentencesRound({ onAgain }) {
   const done = useStore((s) => s.sentences ?? {});
-  // Цөөн удаа зөв хийсэн өгүүлбэрүүдийг түрүүлж (санамсаргүй дарааллаар).
+  const srs = useStore((s) => s.srs);
+  const sentences = useSentences();
+  // Сурсан үгсээрээ бүтсэн, цөөн удаа хийсэн өгүүлбэрүүдийг түрүүлж (санамсаргүй дарааллаар).
+  const rank = (x) => (x.t.every((t) => srs[t[2]]) ? 0 : 100) + (done[x.id] ?? 0);
   const set = useMemo(
-    () => shuffle(sentences).sort((a, b) => (done[a.id] ?? 0) - (done[b.id] ?? 0)).slice(0, SESSION),
+    () => shuffle(sentences).sort((a, b) => rank(a) - rank(b)).slice(0, SESSION),
     [], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const [i, setI] = useState(0);
@@ -66,7 +69,7 @@ function SentencesRound({ onAgain }) {
 
 function Builder({ item, onDone }) {
   const tiles = useMemo(() => {
-    let t = shuffle(item.words.map((w, k) => ({ w, k })));
+    let t = shuffle(item.words.map((w, k) => ({ w, k, g: item.t?.[k]?.[1] })));
     // Аль хэдийн зөв дараалалтай байвал дахин холино.
     if (t.length > 1 && t.every((x, n) => x.k === n)) t = [...t.slice(1), t[0]];
     return t;
@@ -116,6 +119,7 @@ function Builder({ item, onDone }) {
             className="rounded-xl border border-line bg-surface px-3 py-2 text-lg"
           >
             <Ko text={tiles.find((t) => t.k === k).w} />
+            <span className="block text-[11px] text-muted">{tiles.find((t) => t.k === k).g}</span>
           </button>
         ))}
       </div>
@@ -135,6 +139,7 @@ function Builder({ item, onDone }) {
               className={cx("rounded-xl border px-3 py-2 text-lg", used ? "border-line opacity-25" : "border-accent bg-surface hover:bg-listening-soft")}
             >
               <Ko text={t.w} />
+              {t.g && <span className="block text-[11px] text-muted">{t.g}</span>}
             </button>
           );
         })}

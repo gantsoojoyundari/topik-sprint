@@ -62,6 +62,19 @@ export default function Settings() {
           <Button variant="outline" onClick={logout}>Гарах</Button>
         </Card>
 
+        {session?.admin && (
+          <a href="#/admin" className="block">
+            <Card className="flex items-center gap-3 border-accent hover:bg-line/40">
+              <span className="text-2xl">🛡️</span>
+              <div className="flex-1">
+                <p className="font-semibold">Админ самбар</p>
+                <p className="text-xs text-muted">Хэрэглэгчид · агуулга нэмэх · бүх хичээлийг нээх</p>
+              </div>
+              <span className="text-muted">›</span>
+            </Card>
+          </a>
+        )}
+
         <Card className="space-y-2">
           <p className="text-sm font-medium">Харагдац</p>
           <Segmented value={settings.theme} onChange={setTheme} options={[["light", "Цайвар"], ["dark", "Бараан"], ["system", "Систем"]]} />

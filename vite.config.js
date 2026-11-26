@@ -48,7 +48,7 @@ function devApi() {
 export default defineConfig(({ mode }) => {
   // .env.local доторх ANTHROPIC_API_KEY-г зөвхөн сервер талд (middleware) ашиглана — client bundle-д орохгүй.
   const env = loadEnv(mode, process.cwd(), "");
-  for (const k of ["ANTHROPIC_API_KEY", "KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]) {
+  for (const k of ["ANTHROPIC_API_KEY", "KV_REST_API_URL", "KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", "ADMIN_NAMES"]) {
     if (env[k] && !process.env[k]) process.env[k] = env[k];
   }
   return { plugins: [react(), tailwindcss(), devApi()] };

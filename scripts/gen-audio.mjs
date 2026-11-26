@@ -24,6 +24,7 @@ const listening = readJson("src/data/listening.json");
 const grammar = readJson("src/data/grammar.json");
 const hangul = readJson("src/data/hangul.json");
 const sentences = readJson("src/data/sentences.json");
+const stories = readJson("src/data/stories.json");
 
 // id → [{ voice, text }]  (нэг файлд олон мөр залгагдана)
 const jobs = {};
@@ -39,6 +40,7 @@ for (const h of hangul.letters) {
   jobs[`hangul/${h.id}-ex`] = [{ voice: VOICE.여, text: h.ex_ko }];
 }
 for (const st of sentences) jobs[`sentence/${st.id}`] = [{ voice: VOICE.여, text: st.ko }];
+for (const st of stories) st.sentences.forEach((s, n) => (jobs[`story/${st.id}-${n}`] = [{ voice: VOICE.여, text: s.t.map((x) => x[0]).join(" ") }]));
 for (const g of grammar) {
   g.examples.forEach((e, i) => (jobs[`grammar/${g.id}-${i}`] = [{ voice: VOICE.남, text: e.ko }]));
 }

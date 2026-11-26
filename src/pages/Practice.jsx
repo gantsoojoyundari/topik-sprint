@@ -15,6 +15,14 @@ export default function Practice() {
     { href: "#/reading", ko: "읽기", mn: "Унших", note: `${reading.items.length} асуулт · төрлөөр, хугацаатай`, tone: "reading" },
     { href: "#/writing", ko: "쓰기", mn: "Бичих", note: `${writing.length} даалгавар · AI үнэлгээ`, tone: "writing" },
     { href: "#/grammar", ko: "문법", mn: "Дүрмийн сан", note: `${grammar.length} хэв маяг · харьцуулалт, дасгал`, tone: "writing" },
+    // Эхлэгчийн замд байдаг ч төгссөний дараа ч хэрэгтэй дасгалууд
+    ...(b.graduated
+      ? [
+          { href: "#/speaking", ko: "말하기", mn: "Ярих", note: "Сонсоод давтаж хэл · дуудлага шалгана", tone: "listening" },
+          { href: "#/dictation", ko: "받아쓰기", mn: "Сонсоод бичих", note: "Диктант · гараар эсвэл хэсгээр", tone: "writing" },
+          { href: "#/stories", ko: "이야기", mn: "Богино уншлага", note: "Үг дээр дарж утга · орчуулгатай", tone: "reading" },
+        ]
+      : []),
   ];
   return (
     <Page title="Дадлага">

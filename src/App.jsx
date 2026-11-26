@@ -20,6 +20,10 @@ import Hangul from "./pages/Hangul.jsx";
 import Sentences from "./pages/Sentences.jsx";
 import EasyListening from "./pages/EasyListening.jsx";
 import DailyTest from "./pages/DailyTest.jsx";
+import Stories from "./pages/Stories.jsx";
+import Speaking from "./pages/Speaking.jsx";
+import Dictation from "./pages/Dictation.jsx";
+import Admin from "./pages/Admin.jsx";
 
 const ROUTES = {
   "": Home,
@@ -38,6 +42,10 @@ const ROUTES = {
   sentences: Sentences,
   "easy-listening": EasyListening,
   "daily-test": DailyTest,
+  stories: Stories,
+  speaking: Speaking,
+  dictation: Dictation,
+  admin: Admin,
 };
 
 function useHashRoute() {
@@ -62,7 +70,7 @@ const NAV = [
   { href: "#/progress", route: "progress", label: "Явц", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2" },
 ];
 
-const PRACTICE_ROUTES = ["hangul", "sentences", "easy-listening", "practice", "grammar", "listening", "reading", "writing", "mistakes"];
+const PRACTICE_ROUTES = ["hangul", "sentences", "stories", "speaking", "dictation", "easy-listening", "practice", "grammar", "listening", "reading", "writing", "mistakes"];
 
 export default function App() {
   const session = useSession();
@@ -77,7 +85,7 @@ function Main() {
   if (!profile || !diagnostic?.seen) return <Onboarding />;
 
   const Screen = ROUTES[route] ?? Home;
-  const active = PRACTICE_ROUTES.includes(route) ? "practice" : route === "plan" || route === "settings" ? "" : route;
+  const active = PRACTICE_ROUTES.includes(route) ? "practice" : route === "plan" || route === "settings" || route === "admin" ? "" : route;
 
   return (
     <div className="min-h-dvh">

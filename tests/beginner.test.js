@@ -11,13 +11,18 @@ test("эхлэгч: эхэндээ зөвхөн үсгийн даалгавар"
   assert.equal(b.graduated, false);
 });
 
-test("эхлэгч: үндсэн 24 үсэг → үг нээгдэнэ; 40/60 үг → сонсгол/өгүүлбэр", () => {
+test("эхлэгч: 24 үсэг → үг; 20 үг → уншлага/ярих/диктант (өдөрт нэг); 40/60 → сонсгол/өгүүлбэр", () => {
   const hs = Object.fromEntries(hangul.letters.filter((l) => ["consonant", "vowel"].includes(l.group)).map((l) => [l.id, 2]));
   const basics = vocab.words.filter((w) => w.topic === "basic");
   const srs = (n) => Object.fromEntries(basics.slice(0, n).map((w) => [w.id, { due: "2026-11-03" }]));
-  assert.deepEqual(beginnerTasks(beginnerState({ hangul: hs }), "d").map((t) => t.kind), ["hangul", "vocab"]);
-  assert.deepEqual(beginnerTasks(beginnerState({ hangul: hs, srs: srs(40) }), "d").map((t) => t.kind), ["hangul", "vocab", "listening"]);
-  assert.deepEqual(beginnerTasks(beginnerState({ hangul: hs, srs: srs(60) }), "d").map((t) => t.kind), ["hangul", "vocab", "listening", "sentence"]);
+  const kinds = (n, d = "2026-11-02") => beginnerTasks(beginnerState({ hangul: hs, srs: srs(n) }), d).map((t) => t.kind);
+  assert.deepEqual(kinds(0), ["hangul", "vocab"]);
+  const rot = ["stories", "speaking", "dictation"];
+  assert.equal(kinds(20).filter((k) => rot.includes(k)).length, 1);
+  const seen = new Set(["2026-11-02", "2026-11-03", "2026-11-04"].flatMap((d) => kinds(20, d).filter((k) => rot.includes(k))));
+  assert.equal(seen.size, 3);
+  assert.ok(kinds(40).includes("listening"));
+  assert.ok(kinds(60).includes("sentence"));
 });
 
 test("эхлэгч: бүх үсэг + бүх анхан шатны үг → төгссөн", () => {

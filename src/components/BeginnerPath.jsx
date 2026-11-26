@@ -1,19 +1,14 @@
 import { STEPS } from "../lib/beginner.js";
 import { Card, Bar, Bow, cx } from "./ui.jsx";
 
-/** Эхлэгчийн 4 алхам — нээгдсэн, түгжээтэй, явцтай нь. */
+/** Эхлэгчийн алхмууд — нээгдсэн, түгжээтэй, явцтай нь. */
 export function BeginnerPath({ b }) {
   const progress = {
     hangul: [b.lettersAll, b.lettersTotal],
     vocab: [b.words, b.wordsTotal],
-    listening: null,
-    sentence: null,
   };
-  const lockNote = {
-    vocab: `Үндсэн ${b.basicLettersTotal} үсгээ сурвал нээгдэнэ (${b.lettersBasic}/${b.basicLettersTotal})`,
-    listening: `40 үг сурвал нээгдэнэ (${b.words}/40)`,
-    sentence: `60 үг сурвал нээгдэнэ (${b.words}/60)`,
-  };
+  const lockNote = { vocab: `Үндсэн ${b.basicLettersTotal} үсгээ сурвал нээгдэнэ (${b.lettersBasic}/${b.basicLettersTotal})` };
+  for (const s of STEPS) if (s.need) lockNote[s.id] = `${s.need} үг сурвал нээгдэнэ (${Math.min(b.words, s.need)}/${s.need})`;
   return (
     <Card className="relative space-y-3">
       <Bow className="absolute -right-2 -top-3 w-10 rotate-12" />

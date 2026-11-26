@@ -132,7 +132,7 @@ function activate(res) {
   const useLocal = local?.profile && (!res.data || newer(local, res.data));
   openUser(key, useLocal ? local : res.data, schedule);
   applyTheme();
-  writeSession({ name: res.name, token: res.token });
+  writeSession({ name: res.name, token: res.token, admin: !!res.admin });
   if (useLocal) schedule();
 }
 
@@ -234,7 +234,8 @@ export function restore() {
   openUser(key, cachedData(key), schedule);
   applyTheme();
   call("load")
-    .then(({ data }) => {
+    .then(({ data, admin }) => {
+      if (!!admin !== !!session?.admin) writeSession({ ...session, admin: !!admin });
       const local = getState();
       if (data && newer(data, local)) {
         replaceState(data);
@@ -247,6 +248,9 @@ export function restore() {
       else setStatus("offline");
     });
 }
+
+/** Админ үйлдэл (сервер талд ADMIN_NAMES-ээр шалгагдана). */
+export const adminCall = (action, payload) => call(action, payload);
 
 export function hasLegacyData() {
   return !!legacyData();
